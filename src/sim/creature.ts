@@ -1,3 +1,4 @@
+import { randomFamily, randomGiven } from './names'
 import { CFG, type Food, type Genes, type Kind } from './types'
 
 export const rnd = (a: number, b: number) => a + Math.random() * (b - a)
@@ -31,6 +32,8 @@ export class Creature {
   children = 0
   dir = rnd(0, Math.PI * 2)
   infected = 0 // 남은 감염 틱
+  family: string
+  given: string
   immune = false
 
   x: number
@@ -44,7 +47,11 @@ export class Creature {
     this.kind = kind
     this.parentId = parent?.id ?? null
     this.gen = parent ? parent.gen + 1 : 0
+    this.family = parent?.family ?? randomFamily(kind === 'predator')
+    this.given = randomGiven()
   }
+
+  get name() { return `${this.family} ${this.given}` }
 
   get isPredator() { return this.kind === 'predator' }
 

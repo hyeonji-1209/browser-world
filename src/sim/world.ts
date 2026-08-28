@@ -67,7 +67,7 @@ export class World {
 
   private bury(c: Creature, cause: string) {
     this.graveyard.set(c.id, {
-      id: c.id, kind: c.kind, parentId: c.parentId, gen: c.gen, genes: c.genes,
+      id: c.id, name: c.name, family: c.family, kind: c.kind, parentId: c.parentId, gen: c.gen, genes: c.genes,
       died: this.tick, children: c.children, cause,
     })
   }
@@ -129,6 +129,9 @@ export class World {
     const prey = this.creatures.filter((c) => !c.isPredator)
     const n = prey.length || 1
     const avg = (k: 'speed' | 'size' | 'sight') => prey.reduce((s, c) => s + c.genes[k], 0) / n
+    const fam = new Map<string, number>()
+    for (const c of prey) fam.set(c.family, (fam.get(c.family) ?? 0) + 1)
+    const topFamilies = [...fam].map(([family, count]) => ({ family, count })).sort((a, b) => b.count - a.count).slice(0, 3)
     return {
       tick: this.tick,
       population: prey.length,
@@ -142,6 +145,7 @@ export class World {
       season: this.season,
       foodMul: this.foodMul,
       activityMul: this.activityMul,
+      topFamilies,
     }
   }
 

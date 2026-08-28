@@ -8,6 +8,7 @@ export function Hud({ stats, paused, event }: { stats: WorldStats | null; paused
 피식자 ${stats.population}   포식자 ${stats.predators}   감염 ${stats.infected}   먹이 ${stats.food}
 최고 세대 ${stats.maxGen}
 평균 속도 ${stats.avgSpeed.toFixed(2)}  크기 ${stats.avgSize.toFixed(2)}  시야 ${stats.avgSight.toFixed(0)}`}
+      {`\n👑 ${stats.topFamilies.map((f) => `${f.family}가 ${f.count}`).join(' · ') || '-'}`}
       {event && `\n⚠ ${event}`}
       {paused && '\n⏸ 일시정지'}
     </div>

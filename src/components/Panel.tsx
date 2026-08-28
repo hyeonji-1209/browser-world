@@ -17,7 +17,7 @@ export function Panel({ c, lineage }: { c: Creature; lineage: (Creature | Ghost)
   return (
     <div className="card fixed top-3 right-3 w-[270px] px-4 py-3 text-[13px] leading-relaxed">
       <h3 className="font-bold mb-1.5">
-        <span style={{ color: c.color }}>■</span> {c.isPredator ? '🦊 포식자' : '🐣 피식자'} #{c.id} · {c.gen}세대
+        <span style={{ color: c.color }}>■</span> {c.isPredator ? '🦊' : '🐣'} {c.name} · {c.gen}세대
       </h3>
       <Bar label="속도" v={g.speed} max={4} />
       <Bar label="크기" v={g.size} max={10} />
@@ -31,7 +31,7 @@ export function Panel({ c, lineage }: { c: Creature; lineage: (Creature | Ghost)
         {lineage.length === 0 && <div>1세대 (조상 없음)</div>}
         {lineage.map((p) => (
           <div key={p.id}>
-            ↑ #{p.id} {p.gen}세대 · 속 {p.genes.speed.toFixed(2)} 크 {p.genes.size.toFixed(1)} 시 {p.genes.sight.toFixed(0)}
+            ↑ {p.name} {p.gen}세대 · 속 {p.genes.speed.toFixed(2)} 크 {p.genes.size.toFixed(1)} 시 {p.genes.sight.toFixed(0)}
             {'died' in p && ` † ${p.cause}`}
           </div>
         ))}

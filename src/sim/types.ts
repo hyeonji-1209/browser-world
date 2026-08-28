@@ -15,6 +15,8 @@ export interface Food {
 /** 죽은 개체의 족보용 기록 */
 export interface Ghost {
   id: number
+  name: string
+  family: string
   kind: Kind
   parentId: number | null
   gen: number
@@ -39,6 +41,8 @@ export interface WorldStats {
   season: Season
   foodMul: number
   activityMul: number
+  /** 살아있는 피식자 가문 상위 3 */
+  topFamilies: { family: string; count: number }[]
 }
 
 /** 그래프용 샘플 */
