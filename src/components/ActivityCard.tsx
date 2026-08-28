@@ -6,7 +6,7 @@ export function ActivityCard({ a, onUser }: { a: Activity | null; onUser: (u: st
   const [val, setVal] = useState(a?.user ?? '')
   if (!a) return null
   return (
-    <div className="card fixed bottom-[120px] right-3 px-4 py-3 text-[13px] leading-relaxed w-[300px]">
+    <div className="card fixed bottom-[120px] right-3 z-10 px-4 py-3 text-[13px] leading-relaxed w-[300px]">
       <div className="flex items-center justify-between">
         <span className="font-semibold">🐙 GitHub 연동</span>
         {editing ? (

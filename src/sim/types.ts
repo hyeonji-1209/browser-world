@@ -43,6 +43,8 @@ export interface WorldStats {
   activityMul: number
   /** 살아있는 피식자 가문 상위 3 */
   topFamilies: { family: string; count: number }[]
+  heat: number
+  pollution: number
 }
 
 /** 그래프용 샘플 */

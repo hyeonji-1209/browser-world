@@ -54,6 +54,17 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
   ctx.fillStyle = grad
   ctx.fillRect(0, 0, w.W, w.H)
 
+  // 오염: 화면 가장자리 회색 안개
+  if (w.pollution > 0) {
+    const v = ctx.createRadialGradient(w.W / 2, w.H / 2, Math.min(w.W, w.H) * 0.3, w.W / 2, w.H / 2, Math.max(w.W, w.H) * 0.75)
+    v.addColorStop(0, 'rgba(90,90,100,0)'); v.addColorStop(1, `rgba(90,90,100,${w.pollution * 0.55})`)
+    ctx.fillStyle = v; ctx.fillRect(0, 0, w.W, w.H)
+  }
+  // 열: 붉은 기운
+  if (w.heat > 0.3) {
+    ctx.fillStyle = `rgba(251,113,133,${(w.heat - 0.3) * 0.25})`; ctx.fillRect(0, 0, w.W, w.H)
+  }
+
   // 겨울엔 눈
   if (w.season === '겨울') {
     ctx.fillStyle = 'rgba(255,255,255,.8)'

@@ -16,6 +16,10 @@ export class World {
   lastEvent = ''
   /** 외부 활동(GitHub 등)으로 인한 먹이 배율 */
   activityMul = 1
+  /** 컴퓨터 CPU → 열 (0~1) */
+  heat = 0
+  /** 컴퓨터 메모리 압박 → 오염 (0~1) */
+  pollution = 0
 
   constructor(W: number, H: number) {
     this.resize(W, H)
@@ -74,14 +78,14 @@ export class World {
 
   step() {
     this.tick++
-    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul) this.spawnFood(1)
-    if (Math.random() < CFG.outbreakChance) this.outbreak()
+    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6)) this.spawnFood(1)
+    if (Math.random() < CFG.outbreakChance * (1 + this.pollution * 8)) this.outbreak()
 
     const dead = new Set<Creature>()
     const born: Creature[] = []
     for (const c of this.creatures) {
       if (dead.has(c)) continue
-      const r = c.update(this.food, this.creatures, this.W, this.H)
+      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat)
       if (r.killed && !dead.has(r.killed)) { dead.add(r.killed); this.bury(r.killed, '포식') }
       if (!r.alive) { dead.add(c); this.bury(c, r.cause!) }
       if (r.child) born.push(r.child)
@@ -146,6 +150,8 @@ export class World {
       foodMul: this.foodMul,
       activityMul: this.activityMul,
       topFamilies,
+      heat: this.heat,
+      pollution: this.pollution,
     }
   }
 

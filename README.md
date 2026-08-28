@@ -10,9 +10,27 @@ npm i
 npm run dev
 ```
 
+## 데스크톱 앱으로 띄워두기
+
+두 가지 방법:
+
+**1. PWA (설치 없이)** — `npm run dev` 또는 배포 링크를 Chrome에서 열고 주소창 오른쪽 "설치" 아이콘 → Dock에 독립 창 앱으로 뜸.
+
+**2. Tauri 네이티브 앱 (.app / .dmg)** — 컴퓨터 상태(CPU·RAM)를 세계의 날씨로 연동하려면 이쪽.
+
+```bash
+# Rust 필요: curl https://sh.rustup.rs -sSf | sh
+npm run tauri dev      # 개발
+npm run tauri build    # src-tauri/target/release/bundle/ 에 .app, .dmg 생성
+```
+
+앱에서만 켜지는 규칙:
+- 🔥 **열 = CPU 사용률** — 생명체가 최대 40% 빨라지지만 대사도 60% 늘어남. 화면이 붉게 물듦
+- 🌫 **오염 = 메모리 압박** (RAM 60% 이상부터) — 질병 발병 확률 최대 9배, 먹이 생성 최대 60% 감소. 가장자리에 회색 안개
+
 ## 스택
 
-Vite · React · TypeScript · Tailwind v4 — 시뮬레이션 로직(`src/sim/`)은 순수 TS, React는 HUD/패널만 담당.
+Vite · React · TypeScript · Tailwind v4 · Tauri 2 (Rust `sysinfo`) — 시뮬레이션 로직(`src/sim/`)은 순수 TS, React는 HUD/패널만 담당. `src-tauri/`는 데스크톱 셸.
 
 ## 현재 규칙
 

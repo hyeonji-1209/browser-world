@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Creature } from './sim/creature'
 import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
+import { fetchSystem, heatOf, pollutionOf, type SystemStats } from './sim/system'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 
 export function useWorld() {
@@ -15,6 +16,7 @@ export function useWorld() {
   const [history, setHistory] = useState<Sample[]>([])
   const [event, setEvent] = useState('')
   const [activity, setActivity] = useState<Activity | null>(null)
+  const [system, setSystem] = useState<SystemStats | null>(null)
   const [selected, setSelected] = useState<Creature | null>(null)
   const [paused, setPausedState] = useState(false)
   const [speed, setSpeedState] = useState(1)
@@ -46,7 +48,16 @@ export function useWorld() {
     }
     raf = requestAnimationFrame(loop)
     loadActivity(defaultUser())
-    return () => { cancelAnimationFrame(raf); removeEventListener('resize', resize) }
+    const pollSystem = async () => {
+      const st = await fetchSystem().catch(() => null)
+      if (!st) return
+      setSystem(st)
+      world.heat = heatOf(st)
+      world.pollution = pollutionOf(st)
+    }
+    pollSystem()
+    const sysTimer = setInterval(pollSystem, 3000)
+    return () => { cancelAnimationFrame(raf); clearInterval(sysTimer); removeEventListener('resize', resize) }
   }, [])
 
   const loadActivity = async (user: string) => {
@@ -72,5 +83,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, stats, history, event, activity, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, stats, history, event, activity, system, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

@@ -71,12 +71,15 @@ export class Creature {
     return { best, bd }
   }
 
-  update(food: Food[], creatures: Creature[], W: number, H: number): UpdateResult {
+  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0): UpdateResult {
     const g = this.genes
     this.age++
+    // 열: 빨라지지만(최대 +40%) 대사도 늘어남(최대 +60%)
+    const speedMul = 1 + heat * 0.4
+    const metaMul = 1 + heat * 0.6
     // 대사: 크고 빠르고 시야 넓을수록 비용 ↑ (포식자는 조금 더 효율적)
     const base = 0.05 + g.size * 0.02 + g.speed * g.speed * 0.03 + g.sight * 0.0005
-    this.energy -= this.isPredator ? base * 0.55 : base
+    this.energy -= (this.isPredator ? base * 0.55 : base) * metaMul
     if (this.infected > 0) {
       this.energy -= CFG.diseaseDrain
       if (--this.infected === 0) this.immune = true
@@ -120,8 +123,8 @@ export class Creature {
       }
     }
 
-    this.x += Math.cos(this.dir) * g.speed
-    this.y += Math.sin(this.dir) * g.speed
+    this.x += Math.cos(this.dir) * g.speed * speedMul
+    this.y += Math.sin(this.dir) * g.speed * speedMul
     if (this.x < 0 || this.x > W) { this.dir = Math.PI - this.dir; this.x = clamp(this.x, 0, W) }
     if (this.y < 0 || this.y > H) { this.dir = -this.dir; this.y = clamp(this.y, 0, H) }
 
