@@ -1,4 +1,5 @@
 import { Creature, randomGenes, resetIds, rnd } from './creature'
+import { drawWorld } from './render'
 import { CFG, type Food, type Ghost, type Sample, type Season, type WorldStats } from './types'
 
 const SEASONS: Season[] = ['봄', '여름', '가을', '겨울']
@@ -136,41 +137,6 @@ export class World {
   }
 
   draw(ctx: CanvasRenderingContext2D, selected: Creature | null) {
-    // 계절 배경 톤
-    const bg = { 봄: '#0b1210', 여름: '#0b0e14', 가을: '#120e0b', 겨울: '#0d0f16' }[this.season]
-    ctx.fillStyle = bg
-    ctx.fillRect(0, 0, this.W, this.H)
-    ctx.fillStyle = '#4ade80'
-    for (const f of this.food) ctx.fillRect(f.x | 0, f.y | 0, 2, 2)
-    for (const c of this.creatures) {
-      const s = c.genes.size
-      ctx.fillStyle = c.color
-      if (c.isPredator) {
-        // 포식자는 삼각형
-        ctx.beginPath()
-        ctx.moveTo(c.x + Math.cos(c.dir) * s * 1.4, c.y + Math.sin(c.dir) * s * 1.4)
-        ctx.lineTo(c.x + Math.cos(c.dir + 2.5) * s, c.y + Math.sin(c.dir + 2.5) * s)
-        ctx.lineTo(c.x + Math.cos(c.dir - 2.5) * s, c.y + Math.sin(c.dir - 2.5) * s)
-        ctx.fill()
-      } else {
-        ctx.fillRect((c.x - s) | 0, (c.y - s) | 0, (s * 2) | 0, (s * 2) | 0)
-        ctx.fillStyle = '#000'
-        ctx.fillRect((c.x + Math.cos(c.dir) * s * 0.6) | 0, (c.y + Math.sin(c.dir) * s * 0.6) | 0, 2, 2)
-      }
-      if (c.infected) {
-        ctx.fillStyle = '#a3e635'
-        ctx.fillRect((c.x - 1) | 0, (c.y - s - 4) | 0, 2, 2)
-      }
-    }
-    if (selected) {
-      const s = selected.genes.size
-      ctx.strokeStyle = '#fff'
-      ctx.lineWidth = 1
-      ctx.strokeRect((selected.x - s - 3) | 0, (selected.y - s - 3) | 0, (s * 2 + 6) | 0, (s * 2 + 6) | 0)
-      ctx.strokeStyle = 'rgba(255,255,255,.15)'
-      ctx.beginPath()
-      ctx.arc(selected.x, selected.y, selected.genes.sight, 0, Math.PI * 2)
-      ctx.stroke()
-    }
+    drawWorld(ctx, this, selected)
   }
 }

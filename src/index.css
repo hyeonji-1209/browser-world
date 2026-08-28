@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
 html, body, #root { height: 100%; margin: 0; }
-body { background: #0b0e14; color: #cfd6e4; font-family: ui-monospace, Menlo, monospace; overflow: hidden; }
-canvas { image-rendering: pixelated; }
+body {
+  background: #fdf2f8; color: #4a4458;
+  font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  overflow: hidden;
+}
+.card {
+  background: rgba(255,255,255,.75); backdrop-filter: blur(8px);
+  border: 2px solid #fbcfe8; border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(244,114,182,.15);
+}
+.btn {
+  background: #fff; border: 2px solid #fbcfe8; border-radius: 999px;
+  padding: 6px 14px; font-size: 13px; font-weight: 600; color: #6b5b7b; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(244,114,182,.15); transition: transform .1s;
+}
+.btn:hover { background: #fdf2f8; transform: translateY(-2px); }
+.btn:active { transform: scale(.95); }

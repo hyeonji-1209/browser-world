@@ -3,7 +3,7 @@ import type { WorldStats } from '../sim/types'
 export function Hud({ stats, paused, event }: { stats: WorldStats | null; paused: boolean; event: string }) {
   if (!stats) return null
   return (
-    <div className="fixed top-3 left-3 bg-[#0b0e14]/85 border border-[#2a3140] px-3 py-2 text-[13px] leading-relaxed pointer-events-none whitespace-pre">
+    <div className="card fixed top-3 left-3 px-4 py-3 text-[13px] leading-relaxed pointer-events-none whitespace-pre">
       {`tick ${stats.tick}   ${stats.season} (먹이 x${stats.foodMul})
 피식자 ${stats.population}   포식자 ${stats.predators}   감염 ${stats.infected}   먹이 ${stats.food}
 최고 세대 ${stats.maxGen}

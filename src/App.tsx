@@ -3,7 +3,7 @@ import { Graph } from './components/Graph'
 import { Panel } from './components/Panel'
 import { useWorld } from './useWorld'
 
-const btn = 'bg-[#161b26] hover:bg-[#1f2634] border border-[#2a3140] px-2.5 py-1 text-[13px] cursor-pointer'
+const btn = 'btn'
 
 export default function App() {
   const w = useWorld()
@@ -21,7 +21,7 @@ export default function App() {
         <button className={btn} onClick={() => w.setPaused(!w.paused)}>⏯ 일시정지</button>
         <button className={btn} onClick={() => w.setSpeed(w.speed === 1 ? 4 : w.speed === 4 ? 10 : 1)}>⏩ x{w.speed}</button>
         <button className={btn} onClick={() => w.spawnFood(60)}>🌱 먹이 뿌리기</button>
-        <button className={btn} onClick={w.spawnPredator}>🔺 포식자 추가</button>
+        <button className={btn} onClick={w.spawnPredator}>🦊 포식자 추가</button>
         <button className={btn} onClick={w.outbreak}>🦠 질병 퍼뜨리기</button>
         <button className={btn} onClick={w.reset}>🔄 리셋</button>
       </div>
