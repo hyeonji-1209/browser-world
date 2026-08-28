@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Creature } from './sim/creature'
 import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
+import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 
 export function useWorld() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -13,6 +14,7 @@ export function useWorld() {
   const [stats, setStats] = useState<WorldStats | null>(null)
   const [history, setHistory] = useState<Sample[]>([])
   const [event, setEvent] = useState('')
+  const [activity, setActivity] = useState<Activity | null>(null)
   const [selected, setSelected] = useState<Creature | null>(null)
   const [paused, setPausedState] = useState(false)
   const [speed, setSpeedState] = useState(1)
@@ -43,8 +45,19 @@ export function useWorld() {
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
+    loadActivity(defaultUser())
     return () => { cancelAnimationFrame(raf); removeEventListener('resize', resize) }
   }, [])
+
+  const loadActivity = async (user: string) => {
+    const a = await fetchActivity(user)
+    setActivity(a)
+    const w = worldRef.current
+    if (!w) return
+    w.activityMul = foodMulOf(a)
+    if (a.today > 0) w.rain(a.today * 10)
+  }
+  const setUser = (u: string) => { saveUser(u); loadActivity(u) }
 
   const select = (x: number, y: number) => {
     const c = worldRef.current?.nearest(x, y) ?? null
@@ -59,5 +72,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, stats, history, event, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, stats, history, event, activity, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

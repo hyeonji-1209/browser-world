@@ -14,6 +14,8 @@ export class World {
   W = 0
   H = 0
   lastEvent = ''
+  /** 외부 활동(GitHub 등)으로 인한 먹이 배율 */
+  activityMul = 1
 
   constructor(W: number, H: number) {
     this.resize(W, H)
@@ -49,6 +51,12 @@ export class World {
       this.food.push({ x: rnd(0, this.W), y: rnd(0, this.H) })
   }
 
+  /** 커밋 보상: 먹이 비 */
+  rain(n: number) {
+    this.spawnFood(n)
+    this.lastEvent = `tick ${this.tick}: 커밋 보상 먹이 +${n}`
+  }
+
   /** 무작위 개체 하나 감염시켜 발병 */
   outbreak() {
     const healthy = this.creatures.filter((c) => !c.infected && !c.immune)
@@ -66,7 +74,7 @@ export class World {
 
   step() {
     this.tick++
-    if (Math.random() < CFG.foodRate * this.foodMul) this.spawnFood(1)
+    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul) this.spawnFood(1)
     if (Math.random() < CFG.outbreakChance) this.outbreak()
 
     const dead = new Set<Creature>()
@@ -133,6 +141,7 @@ export class World {
       avgSight: avg('sight'),
       season: this.season,
       foodMul: this.foodMul,
+      activityMul: this.activityMul,
     }
   }
 

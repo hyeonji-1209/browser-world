@@ -38,6 +38,7 @@ export interface WorldStats {
   avgSight: number
   season: Season
   foodMul: number
+  activityMul: number
 }
 
 /** 그래프용 샘플 */
