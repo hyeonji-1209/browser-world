@@ -65,6 +65,17 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     ctx.fillStyle = `rgba(251,113,133,${(w.heat - 0.3) * 0.25})`; ctx.fillRect(0, 0, w.W, w.H)
   }
 
+  // 밤: 남색 오버레이 + 별
+  if (w.night > 0) {
+    ctx.fillStyle = `rgba(30,27,75,${w.night * 0.55})`; ctx.fillRect(0, 0, w.W, w.H)
+    ctx.fillStyle = `rgba(255,255,255,${w.night * 0.9})`
+    for (let i = 0; i < 60; i++) {
+      const x = (i * 271) % w.W, y = (i * 173) % (w.H * 0.6)
+      const tw = 0.5 + Math.abs(Math.sin(frame * 0.05 + i)) * 1.2
+      ctx.beginPath(); ctx.arc(x, y, tw, 0, Math.PI * 2); ctx.fill()
+    }
+  }
+
   // 겨울엔 눈
   if (w.season === '겨울') {
     ctx.fillStyle = 'rgba(255,255,255,.8)'

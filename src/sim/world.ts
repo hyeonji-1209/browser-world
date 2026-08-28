@@ -1,4 +1,4 @@
-import { Creature, randomGenes, resetIds, rnd } from './creature'
+import { Creature, getNextId, randomGenes, resetIds, rnd, setNextId } from './creature'
 import { drawWorld } from './render'
 import { CFG, type Food, type Ghost, type Sample, type Season, type WorldStats } from './types'
 
@@ -20,6 +20,8 @@ export class World {
   heat = 0
   /** 컴퓨터 메모리 압박 → 오염 (0~1) */
   pollution = 0
+  /** 배터리 → 밤 (0~1). 밤엔 느려지고 먹이가 잘 안 자람 */
+  night = 0
 
   constructor(W: number, H: number) {
     this.resize(W, H)
@@ -74,18 +76,47 @@ export class World {
       id: c.id, name: c.name, family: c.family, kind: c.kind, parentId: c.parentId, gen: c.gen, genes: c.genes,
       died: this.tick, children: c.children, cause,
     })
+    // 묘지 상한: 오래된 기록부터 정리 (족보는 최근 조상만 있어도 충분)
+    if (this.graveyard.size > 3000) {
+      const it = this.graveyard.keys()
+      for (let i = 0; i < 500; i++) this.graveyard.delete(it.next().value!)
+    }
+  }
+
+  // ── 저장 / 복원 ──
+  serialize() {
+    return JSON.stringify({
+      v: 1, tick: this.tick, nextId: getNextId(), W: this.W, H: this.H,
+      creatures: this.creatures, food: this.food, graveyard: [...this.graveyard.values()], history: this.history,
+    })
+  }
+  restore(json: string): boolean {
+    try {
+      const d = JSON.parse(json)
+      if (d.v !== 1) return false
+      this.tick = d.tick
+      setNextId(d.nextId)
+      // 창 크기가 달라졌으면 좌표 스케일
+      const sx = this.W / d.W, sy = this.H / d.H
+      this.creatures = d.creatures.map((c: Parameters<typeof Creature.fromJSON>[0]) => { const o = Creature.fromJSON(c); o.x *= sx; o.y *= sy; return o })
+      this.food = d.food.map((f: Food) => ({ x: f.x * sx, y: f.y * sy }))
+      this.graveyard = new Map(d.graveyard.map((g: Ghost) => [g.id, g]))
+      this.history = d.history
+      this.lastEvent = `세계 복원 (tick ${this.tick})`
+      return true
+    } catch { return false }
   }
 
   step() {
     this.tick++
-    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6)) this.spawnFood(1)
+    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3)) this.spawnFood(1)
     if (Math.random() < CFG.outbreakChance * (1 + this.pollution * 8)) this.outbreak()
 
     const dead = new Set<Creature>()
     const born: Creature[] = []
     for (const c of this.creatures) {
       if (dead.has(c)) continue
-      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat)
+      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat, this.night)
       if (r.killed && !dead.has(r.killed)) { dead.add(r.killed); this.bury(r.killed, '포식') }
       if (!r.alive) { dead.add(c); this.bury(c, r.cause!) }
       if (r.child) born.push(r.child)
@@ -152,6 +183,7 @@ export class World {
       topFamilies,
       heat: this.heat,
       pollution: this.pollution,
+      night: this.night,
     }
   }
 

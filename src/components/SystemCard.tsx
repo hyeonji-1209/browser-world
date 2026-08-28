@@ -1,4 +1,4 @@
-import { fmtGB, heatOf, pollutionOf, type SystemStats } from '../sim/system'
+import { fmtGB, heatOf, nightOf, pollutionOf, type SystemStats } from '../sim/system'
 
 function Meter({ label, v, color, note }: { label: string; v: number; color: string; note: string }) {
   return (
@@ -13,7 +13,7 @@ function Meter({ label, v, color, note }: { label: string; v: number; color: str
 
 export function SystemCard({ s }: { s: SystemStats | null }) {
   if (!s) return null
-  const heat = heatOf(s), pol = pollutionOf(s)
+  const heat = heatOf(s), pol = pollutionOf(s), night = nightOf(s)
   return (
     <div className="card fixed top-3 left-1/2 -translate-x-1/2 px-4 py-3 text-[13px] leading-relaxed w-[280px]">
       <div className="font-semibold mb-1">💻 내 컴퓨터가 곧 날씨</div>
@@ -21,6 +21,10 @@ export function SystemCard({ s }: { s: SystemStats | null }) {
         note={heat < 0.3 ? '쾌적' : heat < 0.7 ? '생명체가 빨라짐' : '폭염! 대사 폭증'} />
       <Meter label={`🌫 오염 (RAM ${fmtGB(s.mem_used)}/${fmtGB(s.mem_total)})`} v={pol} color="#94a3b8"
         note={pol === 0 ? '맑음' : pol < 0.5 ? '질병 확률 ↑' : '먹이 감소·역병'} />
+      {s.battery_pct != null && (
+        <Meter label={`🌙 밤 (배터리 ${s.battery_pct.toFixed(0)}%${s.charging ? ' ⚡' : ''})`} v={night} color="#818cf8"
+          note={s.charging ? '충전 중 · 낮' : night === 0 ? '낮' : night < 0.6 ? '저녁 · 느려짐' : '깊은 밤 · 잠'} />
+      )}
       <div className="text-[11px] text-[#9a8fae]">프로세스 {s.process_count}개 · 켠 지 {(s.uptime_secs / 3600).toFixed(1)}시간</div>
     </div>
   )

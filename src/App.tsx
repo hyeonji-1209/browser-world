@@ -27,7 +27,7 @@ export default function App() {
         <button className={btn} onClick={() => w.spawnFood(60)}>🌱 먹이 뿌리기</button>
         <button className={btn} onClick={w.spawnPredator}>🦊 포식자 추가</button>
         <button className={btn} onClick={w.outbreak}>🦠 질병 퍼뜨리기</button>
-        <button className={btn} onClick={w.reset}>🔄 리셋</button>
+        <button className={btn} onClick={w.reset}>🔄 새 세계</button>
       </div>
     </>
   )

@@ -8,6 +8,8 @@ const mutate = (v: number, lo: number, hi: number) =>
 
 let nextId = 1
 export const resetIds = () => (nextId = 1)
+export const getNextId = () => nextId
+export const setNextId = (n: number) => (nextId = n)
 
 export function randomGenes(kind: Kind): Genes {
   return kind === 'prey'
@@ -55,6 +57,16 @@ export class Creature {
 
   get isPredator() { return this.kind === 'predator' }
 
+  toJSON() {
+    const { id, kind, parentId, gen, energy, age, children, dir, infected, immune, family, given, x, y, genes } = this
+    return { id, kind, parentId, gen, energy, age, children, dir, infected, immune, family, given, x, y, genes }
+  }
+  static fromJSON(d: ReturnType<Creature['toJSON']>) {
+    const c = new Creature(d.x, d.y, d.genes, d.kind)
+    Object.assign(c, d)
+    return c
+  }
+
   get color() {
     if (this.infected) return `hsl(${this.genes.hue},30%,45%)`
     return this.isPredator ? `hsl(${this.genes.hue},85%,50%)` : `hsl(${this.genes.hue},70%,60%)`
@@ -71,12 +83,12 @@ export class Creature {
     return { best, bd }
   }
 
-  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0): UpdateResult {
+  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0, night = 0): UpdateResult {
     const g = this.genes
     this.age++
     // 열: 빨라지지만(최대 +40%) 대사도 늘어남(최대 +60%)
-    const speedMul = 1 + heat * 0.4
-    const metaMul = 1 + heat * 0.6
+    const speedMul = (1 + heat * 0.4) * (1 - night * 0.35)
+    const metaMul = (1 + heat * 0.6) * (1 - night * 0.4)
     // 대사: 크고 빠르고 시야 넓을수록 비용 ↑ (포식자는 조금 더 효율적)
     const base = 0.05 + g.size * 0.02 + g.speed * g.speed * 0.03 + g.sight * 0.0005
     this.energy -= (this.isPredator ? base * 0.55 : base) * metaMul

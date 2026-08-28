@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Creature } from './sim/creature'
 import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
-import { fetchSystem, heatOf, pollutionOf, type SystemStats } from './sim/system'
+import { fetchSystem, heatOf, nightOf, pollutionOf, type SystemStats } from './sim/system'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 
 export function useWorld() {
@@ -26,6 +26,12 @@ export function useWorld() {
     const canvas = canvasRef.current!
     const ctx = canvas.getContext('2d')!
     const world = (worldRef.current = new World(innerWidth, innerHeight))
+    const SAVE_KEY = 'bw:world'
+    try { const saved = localStorage.getItem(SAVE_KEY); if (saved) world.restore(saved) } catch { /* 저장소 없음 */ }
+    const save = () => { try { localStorage.setItem(SAVE_KEY, world.serialize()) } catch { /* 용량 초과 등 */ } }
+    const saveTimer = setInterval(save, 5000)
+    addEventListener('beforeunload', save)
+    addEventListener('visibilitychange', () => document.hidden && save())
 
     const resize = () => {
       canvas.width = innerWidth
@@ -54,10 +60,11 @@ export function useWorld() {
       setSystem(st)
       world.heat = heatOf(st)
       world.pollution = pollutionOf(st)
+      world.night = nightOf(st)
     }
     pollSystem()
     const sysTimer = setInterval(pollSystem, 3000)
-    return () => { cancelAnimationFrame(raf); clearInterval(sysTimer); removeEventListener('resize', resize) }
+    return () => { cancelAnimationFrame(raf); clearInterval(sysTimer); clearInterval(saveTimer); removeEventListener('beforeunload', save); removeEventListener('resize', resize) }
   }, [])
 
   const loadActivity = async (user: string) => {
@@ -77,7 +84,7 @@ export function useWorld() {
   }
   const setPaused = (v: boolean) => { pausedRef.current = v; setPausedState(v) }
   const setSpeed = (v: number) => { speedRef.current = v; setSpeedState(v) }
-  const reset = () => { worldRef.current?.reset(); select(-999, -999) }
+  const reset = () => { try { localStorage.removeItem('bw:world') } catch { /* */ } worldRef.current?.reset(); select(-999, -999) }
   const spawnFood = (n: number) => worldRef.current?.spawnFood(n)
   const spawnPredator = () => worldRef.current?.spawn('predator')
   const outbreak = () => worldRef.current?.outbreak()

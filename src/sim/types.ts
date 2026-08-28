@@ -45,6 +45,7 @@ export interface WorldStats {
   topFamilies: { family: string; count: number }[]
   heat: number
   pollution: number
+  night: number
 }
 
 /** 그래프용 샘플 */
