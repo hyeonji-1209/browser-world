@@ -1,6 +1,7 @@
 import { Hud } from './components/Hud'
 import { ActivityCard } from './components/ActivityCard'
 import { SystemCard } from './components/SystemCard'
+import { WeatherCard } from './components/WeatherCard'
 import { Graph } from './components/Graph'
 import { Panel } from './components/Panel'
 import { useWorld } from './useWorld'
@@ -20,6 +21,7 @@ export default function App() {
       <Graph history={w.history} />
       <ActivityCard a={w.activity} onUser={w.setUser} />
       <SystemCard s={w.system} />
+      <WeatherCard w={w.weather} />
       {w.selected && <Panel c={w.selected} lineage={w.lineage(w.selected)} />}
       <div className="fixed bottom-3 left-3 flex gap-1.5">
         <button className={btn} onClick={() => w.setPaused(!w.paused)}>⏯ 일시정지</button>

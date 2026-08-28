@@ -22,6 +22,14 @@ export class World {
   pollution = 0
   /** 배터리 → 밤 (0~1). 밤엔 느려지고 먹이가 잘 안 자람 */
   night = 0
+  /** 바깥 날씨 (0~1) */
+  rain = 0
+  snow = 0
+  cloud = 0
+  thunder = 0
+  tempStress = 0
+  /** 렌더러가 소비하는 순간 이펙트 */
+  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning'; x: number; y: number; t: number; text?: string }[] = []
 
   constructor(W: number, H: number) {
     this.resize(W, H)
@@ -58,7 +66,7 @@ export class World {
   }
 
   /** 커밋 보상: 먹이 비 */
-  rain(n: number) {
+  rainFood(n: number) {
     this.spawnFood(n)
     this.lastEvent = `tick ${this.tick}: 커밋 보상 먹이 +${n}`
   }
@@ -109,19 +117,25 @@ export class World {
 
   step() {
     this.tick++
-    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3)) this.spawnFood(1)
+    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3) * (1 + this.rain * 1.5)) this.spawnFood(1)
+    if (this.thunder && Math.random() < 0.004) this.effects.push({ kind: 'lightning', x: rnd(0, this.W), y: 0, t: 0 })
     if (Math.random() < CFG.outbreakChance * (1 + this.pollution * 8)) this.outbreak()
 
     const dead = new Set<Creature>()
     const born: Creature[] = []
     for (const c of this.creatures) {
       if (dead.has(c)) continue
-      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat, this.night)
-      if (r.killed && !dead.has(r.killed)) { dead.add(r.killed); this.bury(r.killed, '포식') }
-      if (!r.alive) { dead.add(c); this.bury(c, r.cause!) }
+      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat, this.night, this.tempStress)
+      if (r.ate && Math.random() < 0.5) this.effects.push({ kind: 'eat', x: c.x, y: c.y - c.genes.size * 2, t: 0, text: c.isPredator ? '앙' : '냠' })
+      if (r.child) this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 })
+      if (r.killed && !dead.has(r.killed)) { dead.add(r.killed); this.bury(r.killed, '포식'); this.effects.push({ kind: 'death', x: r.killed.x, y: r.killed.y, t: 0 }) }
+      if (!r.alive) { dead.add(c); this.bury(c, r.cause!); this.effects.push({ kind: 'death', x: c.x, y: c.y, t: 0 }) }
       if (r.child) born.push(r.child)
     }
     this.creatures = this.creatures.filter((c) => !dead.has(c)).concat(born)
+    for (const e of this.effects) e.t++
+    this.effects = this.effects.filter((e) => e.t < 60)
+    if (this.effects.length > 200) this.effects.splice(0, this.effects.length - 200)
 
     // 전멸 방지
     if (!this.creatures.some((c) => !c.isPredator)) for (let i = 0; i < 10; i++) this.spawn('prey')

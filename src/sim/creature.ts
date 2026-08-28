@@ -22,6 +22,7 @@ export interface UpdateResult {
   cause?: string
   child?: Creature
   killed?: Creature
+  ate?: boolean
 }
 
 export class Creature {
@@ -34,6 +35,9 @@ export class Creature {
   children = 0
   dir = rnd(0, Math.PI * 2)
   infected = 0 // 남은 감염 틱
+  /** 표정용: 'scared' 도망 중, 'happy' 방금 먹음(틱 카운트다운) */
+  scared = false
+  happyTicks = 0
   family: string
   given: string
   immune = false
@@ -83,12 +87,12 @@ export class Creature {
     return { best, bd }
   }
 
-  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0, night = 0): UpdateResult {
+  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0, night = 0, tempStress = 0): UpdateResult {
     const g = this.genes
     this.age++
     // 열: 빨라지지만(최대 +40%) 대사도 늘어남(최대 +60%)
     const speedMul = (1 + heat * 0.4) * (1 - night * 0.35)
-    const metaMul = (1 + heat * 0.6) * (1 - night * 0.4)
+    const metaMul = (1 + heat * 0.6 + tempStress * 0.4) * (1 - night * 0.4)
     // 대사: 크고 빠르고 시야 넓을수록 비용 ↑ (포식자는 조금 더 효율적)
     const base = 0.05 + g.size * 0.02 + g.speed * g.speed * 0.03 + g.sight * 0.0005
     this.energy -= (this.isPredator ? base * 0.55 : base) * metaMul
@@ -98,6 +102,9 @@ export class Creature {
     }
 
     let killed: Creature | undefined
+    let ate = false
+    this.scared = false
+    if (this.happyTicks > 0) this.happyTicks--
 
     if (this.isPredator) {
       // 자기보다 너무 큰 피식자는 못 잡음
@@ -107,12 +114,14 @@ export class Creature {
         if (bd < (g.size + best.genes.size) ** 2) {
           killed = best
           this.energy += best.genes.size * CFG.preyEnergyMul
+          ate = true; this.happyTicks = 40
         }
       } else this.dir += rnd(-0.3, 0.3)
     } else {
       // 포식자가 시야 절반 안으로 들어오면 도망 우선
       const threat = this.nearest(creatures, g.sight * 0.7, (c) => c.isPredator).best
       if (threat) {
+        this.scared = true
         this.dir = Math.atan2(this.y - threat.y, this.x - threat.x)
       } else {
         const { best, bd } = this.nearest(food, g.sight)
@@ -121,6 +130,7 @@ export class Creature {
           if (bd < (g.size + 3) ** 2) {
             food.splice(food.indexOf(best), 1)
             this.energy += CFG.foodEnergy
+            ate = true; this.happyTicks = 40
           }
         } else this.dir += rnd(-0.3, 0.3)
       }
@@ -159,6 +169,6 @@ export class Creature {
 
     const maxAge = this.isPredator ? CFG.predMaxAge : CFG.maxAge
     const cause = this.energy <= 0 ? (this.infected ? '질병' : '굶주림') : this.age >= maxAge ? '노화' : undefined
-    return { alive: !cause, cause, child, killed }
+    return { alive: !cause, cause, child, killed, ate }
   }
 }

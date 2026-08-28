@@ -3,6 +3,7 @@ import type { Creature } from './sim/creature'
 import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
 import { fetchSystem, heatOf, nightOf, pollutionOf, type SystemStats } from './sim/system'
+import { cloudOf, fetchWeather, rainOf, realNightOf, snowOf, tempStressOf, thunderOf, type Weather } from './sim/weather'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 
 export function useWorld() {
@@ -17,6 +18,9 @@ export function useWorld() {
   const [event, setEvent] = useState('')
   const [activity, setActivity] = useState<Activity | null>(null)
   const [system, setSystem] = useState<SystemStats | null>(null)
+  const [weather, setWeather] = useState<Weather | null>(null)
+  const systemNightRef = useRef<number | null>(null)
+  const weatherNightRef = useRef(0)
   const [selected, setSelected] = useState<Creature | null>(null)
   const [paused, setPausedState] = useState(false)
   const [speed, setSpeedState] = useState(1)
@@ -54,17 +58,30 @@ export function useWorld() {
     }
     raf = requestAnimationFrame(loop)
     loadActivity(defaultUser())
+    const pollWeather = async () => {
+      const wx = await fetchWeather()
+      if (!wx) return
+      setWeather(wx)
+      world.rain = rainOf(wx); world.snow = snowOf(wx); world.cloud = cloudOf(wx)
+      world.thunder = thunderOf(wx); world.tempStress = tempStressOf(wx)
+      weatherNightRef.current = realNightOf(wx)
+      world.night = Math.max(systemNightRef.current ?? 0, weatherNightRef.current)
+      if (world.rain > 0) world.lastEvent = `비가 와서 먹이가 잘 자라요 (x${(1 + world.rain * 1.5).toFixed(1)})`
+    }
+    pollWeather()
+    const wxTimer = setInterval(pollWeather, 10 * 60 * 1000)
     const pollSystem = async () => {
       const st = await fetchSystem().catch(() => null)
       if (!st) return
       setSystem(st)
       world.heat = heatOf(st)
       world.pollution = pollutionOf(st)
-      world.night = nightOf(st)
+      systemNightRef.current = st.battery_pct == null ? null : nightOf(st)
+      world.night = Math.max(systemNightRef.current ?? 0, weatherNightRef.current)
     }
     pollSystem()
     const sysTimer = setInterval(pollSystem, 3000)
-    return () => { cancelAnimationFrame(raf); clearInterval(sysTimer); clearInterval(saveTimer); removeEventListener('beforeunload', save); removeEventListener('resize', resize) }
+    return () => { cancelAnimationFrame(raf); clearInterval(sysTimer); clearInterval(wxTimer); clearInterval(saveTimer); removeEventListener('beforeunload', save); removeEventListener('resize', resize) }
   }, [])
 
   const loadActivity = async (user: string) => {
@@ -73,7 +90,7 @@ export function useWorld() {
     const w = worldRef.current
     if (!w) return
     w.activityMul = foodMulOf(a)
-    if (a.today > 0) w.rain(a.today * 10)
+    if (a.today > 0) w.rainFood(a.today * 10)
   }
   const setUser = (u: string) => { saveUser(u); loadActivity(u) }
 
@@ -90,5 +107,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, stats, history, event, activity, system, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, stats, history, event, activity, system, weather, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }
