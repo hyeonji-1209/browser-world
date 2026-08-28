@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Creature } from './sim/creature'
-import type { WorldStats } from './sim/types'
+import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
 
 export function useWorld() {
@@ -11,6 +11,8 @@ export function useWorld() {
   const speedRef = useRef(1)
 
   const [stats, setStats] = useState<WorldStats | null>(null)
+  const [history, setHistory] = useState<Sample[]>([])
+  const [event, setEvent] = useState('')
   const [selected, setSelected] = useState<Creature | null>(null)
   const [paused, setPausedState] = useState(false)
   const [speed, setSpeedState] = useState(1)
@@ -37,7 +39,7 @@ export function useWorld() {
       const sel = selectedRef.current
       if (sel && !world.creatures.includes(sel)) { selectedRef.current = null; setSelected(null) }
       world.draw(ctx, selectedRef.current)
-      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); bump((n) => n + 1) }
+      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); bump((n) => n + 1) }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -53,7 +55,9 @@ export function useWorld() {
   const setSpeed = (v: number) => { speedRef.current = v; setSpeedState(v) }
   const reset = () => { worldRef.current?.reset(); select(-999, -999) }
   const spawnFood = (n: number) => worldRef.current?.spawnFood(n)
+  const spawnPredator = () => worldRef.current?.spawn('predator')
+  const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, stats, selected, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, stats, history, event, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }
