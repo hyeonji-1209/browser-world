@@ -38,6 +38,8 @@ export class Creature {
   /** 표정용: 'scared' 도망 중, 'happy' 방금 먹음(틱 카운트다운) */
   scared = false
   happyTicks = 0
+  /** 쓰다듬 받은 횟수 (편애 기록) */
+  petted = 0
   family: string
   given: string
   immune = false
@@ -62,8 +64,8 @@ export class Creature {
   get isPredator() { return this.kind === 'predator' }
 
   toJSON() {
-    const { id, kind, parentId, gen, energy, age, children, dir, infected, immune, family, given, x, y, genes } = this
-    return { id, kind, parentId, gen, energy, age, children, dir, infected, immune, family, given, x, y, genes }
+    const { id, kind, parentId, gen, energy, age, children, dir, infected, immune, family, given, x, y, genes, petted } = this
+    return { id, kind, parentId, gen, energy, age, children, dir, infected, immune, family, given, x, y, genes, petted }
   }
   static fromJSON(d: ReturnType<Creature['toJSON']>) {
     const c = new Creature(d.x, d.y, d.genes, d.kind)

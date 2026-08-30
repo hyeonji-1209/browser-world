@@ -29,7 +29,7 @@ export class World {
   thunder = 0
   tempStress = 0
   /** 렌더러가 소비하는 순간 이펙트 */
-  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning'; x: number; y: number; t: number; text?: string }[] = []
+  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet'; x: number; y: number; t: number; text?: string }[] = []
 
   constructor(W: number, H: number) {
     this.resize(W, H)
@@ -63,6 +63,15 @@ export class World {
   spawnFood(n: number) {
     for (let i = 0; i < n && this.food.length < CFG.maxFood; i++)
       this.food.push({ x: rnd(0, this.W), y: rnd(0, this.H) })
+  }
+
+  /** 쓰다듬기: 소량 회복 + 행복. 너무 자주는 안 통함 */
+  pet(c: Creature) {
+    if (!this.creatures.includes(c)) return
+    c.happyTicks = 50
+    c.energy = Math.min(c.energy + 2, CFG.reproduceAt * 0.95) // 번식 문턱은 못 넘게
+    c.petted++
+    this.effects.push({ kind: 'pet', x: c.x + rnd(-6, 6), y: c.y - c.genes.size * 2, t: 0 })
   }
 
   /** 커밋 보상: 먹이 비 */

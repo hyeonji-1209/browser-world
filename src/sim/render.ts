@@ -179,6 +179,9 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     } else if (e.kind === 'birth') {
       ctx.globalAlpha = 1 - p; ctx.fillStyle = '#f472b6'; ctx.font = `${10 + p * 6}px sans-serif`
       for (let i = 0; i < 3; i++) ctx.fillText('♥', e.x + Math.cos(i * 2.1 + p * 2) * p * 22, e.y - p * 25 + Math.sin(i * 2.1) * 6)
+    } else if (e.kind === 'pet') {
+      ctx.globalAlpha = 1 - p; ctx.fillStyle = '#fb7185'; ctx.font = `${8 + p * 4}px sans-serif`
+      ctx.fillText('♡', e.x + Math.sin(p * 6 + e.x) * 5, e.y - p * 28)
     } else if (e.kind === 'death') {
       ctx.globalAlpha = (1 - p) * 0.9; ctx.font = '14px sans-serif'
       ctx.fillText('👻', e.x + Math.sin(p * 8) * 4, e.y - p * 40)

@@ -51,13 +51,25 @@ fn read_battery() -> (Option<f32>, bool) {
   }
 }
 
+#[tauri::command]
+fn save_png(name: String, base64: String) -> Result<String, String> {
+  use base64::Engine;
+  // 파일명 안전장치
+  let safe: String = name.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_' || *c == '.').collect();
+  let bytes = base64::engine::general_purpose::STANDARD.decode(base64).map_err(|e| e.to_string())?;
+  let dir = dirs::desktop_dir().or_else(dirs::download_dir).ok_or("저장 폴더를 찾을 수 없음")?;
+  let path = dir.join(if safe.is_empty() { "world.png".into() } else { safe });
+  std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
+  Ok(path.display().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let mut sys = System::new_all();
   sys.refresh_all();
   tauri::Builder::default()
     .manage(SysState(Mutex::new(sys)))
-    .invoke_handler(tauri::generate_handler![system_stats])
+    .invoke_handler(tauri::generate_handler![system_stats, save_png])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

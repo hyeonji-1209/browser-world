@@ -22,7 +22,7 @@ export function Panel({ c, lineage }: { c: Creature; lineage: (Creature | Ghost)
       <Bar label="속도" v={g.speed} max={4} />
       <Bar label="크기" v={g.size} max={10} />
       <Bar label="시야" v={g.sight} max={250} />
-      <div>에너지 {c.energy.toFixed(0)} · 나이 {c.age} · 자식 {c.children}</div>
+      <div>에너지 {c.energy.toFixed(0)} · 나이 {c.age} · 자식 {c.children}{c.petted > 0 && <span className="text-pink-400"> · 쓰담 {c.petted}</span>}</div>
       {c.infected > 0 && <div className="text-lime-400">🦠 감염 중 ({c.infected}틱 남음)</div>}
       {c.immune && <div className="text-[#9a8fae]">면역</div>}
       <hr className="border-pink-200 my-2" />

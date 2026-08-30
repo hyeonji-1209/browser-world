@@ -94,6 +94,19 @@ export function useWorld() {
   }
   const setUser = (u: string) => { saveUser(u); loadActivity(u) }
 
+  const petTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startPet = (x: number, y: number) => {
+    stopPet()
+    const w = worldRef.current
+    const c = w?.nearest(x, y, 30)
+    if (!w || !c) return
+    petTimer.current = setInterval(() => {
+      if (!w.creatures.includes(c)) return stopPet()
+      w.pet(c)
+    }, 120)
+  }
+  const stopPet = () => { if (petTimer.current) { clearInterval(petTimer.current); petTimer.current = null } }
+
   const select = (x: number, y: number) => {
     const c = worldRef.current?.nearest(x, y) ?? null
     selectedRef.current = c
@@ -107,5 +120,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, stats, history, event, activity, system, weather, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, activity, system, weather, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }
