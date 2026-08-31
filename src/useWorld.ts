@@ -27,6 +27,7 @@ export function useWorld() {
   const ffRef = useRef(0)
   const [sound, setSoundState] = useState(soundEnabled)
   const [snapshots, setSnapshots] = useState<{ tick: number; season: string; pop: number }[]>([])
+  const [yearReport, setYearReport] = useState<World['yearReport']>(null)
   const systemNightRef = useRef<number | null>(null)
   const weatherNightRef = useRef(0)
   const [selected, setSelected] = useState<Creature | null>(null)
@@ -85,7 +86,7 @@ export function useWorld() {
       const sel = selectedRef.current
       if (sel && !world.creatures.includes(sel)) { selectedRef.current = null; setSelected(null) }
       world.draw(ctx, selectedRef.current)
-      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); setSurvey({ ...world.survey, bySource: { ...world.survey.bySource } }); setSnapshots(world.snapshots.map(({ tick, season, pop }) => ({ tick, season, pop }))); bump((n) => n + 1) }
+      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); setSurvey({ ...world.survey, bySource: { ...world.survey.bySource } }); setSnapshots(world.snapshots.map(({ tick, season, pop }) => ({ tick, season, pop }))); setYearReport(world.yearReport); bump((n) => n + 1) }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -134,6 +135,7 @@ export function useWorld() {
   const fastForward = (ticks: number) => { ffRef.current = ticks; setAway(null) }
   const dismissAway = () => setAway(null)
   const toggleSound = () => { const v = !soundEnabled(); setSoundEnabled(v); setSoundState(v); if (v) unlock() }
+  const dismissYearReport = () => { if (worldRef.current) worldRef.current.yearReport = null; setYearReport(null) }
   const travel = (tick: number) => worldRef.current?.travel(tick) ?? false
 
   /** 세계를 파일로 내보내기 (앱: 데스크톱 저장 / 웹: 다운로드) */
@@ -218,5 +220,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, hoverAt, exportWorld, importWorld, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, hoverAt, exportWorld, importWorld, yearReport, dismissYearReport, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

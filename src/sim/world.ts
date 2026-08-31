@@ -52,7 +52,11 @@ export class World {
   /** 번성한 가문 (8마리 이상 최대 가문) — 깃발 표시용 */
   topFamily: string | null = null
   /** 렌더러가 소비하는 순간 이펙트 */
-  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet' | 'confetti'; x: number; y: number; t: number; text?: string }[] = []
+  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet' | 'confetti' | 'speech'; x: number; y: number; t: number; text?: string }[] = []
+  private lastSpeech = -999
+  /** 연간 연대기 */
+  private yearAcc = { births: 0, deaths: {} as Record<string, number>, speedStart: 0 }
+  yearReport: { year: number; births: number; deaths: Record<string, number>; topFamily: string | null; speedFrom: number; speedTo: number } | null = null
   /** 프론트가 꺼내 재생하는 소리 큐 */
   sounds: ('eat' | 'birth' | 'death' | 'lightning' | 'pet')[] = []
   /** 타임머신: 3000틱마다 자동 스냅샷 (메모리에만, 최근 8개) */
@@ -147,6 +151,7 @@ export class World {
   }
 
   private bury(c: Creature, cause: string) {
+    this.yearAcc.deaths[cause] = (this.yearAcc.deaths[cause] ?? 0) + 1
     this.graveyard.set(c.id, {
       id: c.id, name: c.name, family: c.family, kind: c.kind, parentId: c.parentId, gen: c.gen, genes: c.genes,
       died: this.tick, children: c.children, cause, age: c.age, petted: c.petted,
@@ -237,6 +242,7 @@ export class World {
         this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 })
         if (Math.random() < 0.5) this.sounds.push('birth')
         this.birthsTotal++
+        this.yearAcc.births++
         if (this.birthMilestones[0] === this.birthsTotal) {
           this.birthMilestones.shift()
           this.say(`${this.birthsTotal.toLocaleString()}번째 아이가 태어났어요 🎊`)
@@ -268,7 +274,36 @@ export class World {
     }
     this.creatures = this.creatures.filter((c) => !dead.has(c)).concat(born)
     for (const e of this.effects) e.t++
-    this.effects = this.effects.filter((e) => e.t < 60)
+    this.effects = this.effects.filter((e) => e.t < (e.kind === 'speech' ? 100 : 60))
+
+    // 혼잣말: 가끔 한 마리가 속마음을 말함
+    if (this.tick - this.lastSpeech > 120 && Math.random() < 0.25 && this.creatures.length) {
+      const c = this.creatures[Math.floor(Math.random() * this.creatures.length)]
+      const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)]
+      const text = c.infected > 0 ? pick(['콜록…', '으슬으슬…'])
+        : c.scared ? pick(['으악!', '살려줘!'])
+        : c.energy < 30 ? pick(['배고파…', '먹을 거 없나…'])
+        : c.happyTicks > 0 ? pick(['냠냠 맛있다', '헤헤'])
+        : c.isPredator ? pick(['오늘 사냥은 글렀나', '슬슬 출출한데'])
+        : c.age < 400 ? pick(['엄마 어딨지?', '아장아장'])
+        : pick(['날씨 좋다~', '심심해', '두근두근', '뭐하고 놀지'])
+      this.effects.push({ kind: 'speech', x: c.x, y: c.y - c.genes.size * 2 - 6, t: 0, text })
+      this.lastSpeech = this.tick
+    }
+
+    // 연간 연대기 (1년 = 4계절 = 12,000틱)
+    if (this.tick % 12000 === 0 && this.tick > 0) {
+      const year = this.tick / 12000
+      const s = this.stats()
+      this.yearReport = {
+        year, births: this.yearAcc.births, deaths: { ...this.yearAcc.deaths },
+        topFamily: this.topFamily ?? s.topFamilies[0]?.family ?? null,
+        speedFrom: this.yearAcc.speedStart, speedTo: s.avgSpeed,
+      }
+      this.say(`📜 ${year}년차 연대기가 도착했어요`)
+      this.yearAcc = { births: 0, deaths: {}, speedStart: s.avgSpeed }
+    }
+    if (this.tick === 1) this.yearAcc.speedStart = this.stats().avgSpeed
     if (this.effects.length > 200) this.effects.splice(0, this.effects.length - 200)
 
     // 전멸 방지

@@ -313,6 +313,17 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     } else if (e.kind === 'death') {
       ctx.globalAlpha = (1 - p) * 0.9; ctx.font = '14px sans-serif'
       ctx.fillText('👻', e.x + Math.sin(p * 8) * 4, e.y - p * 40)
+    } else if (e.kind === 'speech' && e.text) {
+      const fade = p < 0.1 ? p * 10 : p > 0.8 ? (1 - p) * 5 : 1
+      ctx.globalAlpha = fade
+      ctx.font = '11px sans-serif'
+      const tw = ctx.measureText(e.text).width + 12
+      const bx = e.x, by = e.y - 14
+      ctx.fillStyle = 'rgba(255,255,255,.92)'
+      ctx.beginPath(); ctx.roundRect(bx - tw / 2, by - 9, tw, 17, 8); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(bx - 3, by + 7); ctx.lineTo(bx + 3, by + 7); ctx.lineTo(bx, by + 12); ctx.closePath(); ctx.fill()
+      ctx.fillStyle = '#6b5b7b'
+      ctx.fillText(e.text, bx, by + 3.5)
     } else if (e.kind === 'confetti') {
       for (let i = 0; i < 14; i++) {
         const a = (i / 14) * Math.PI * 2

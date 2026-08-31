@@ -10,6 +10,7 @@ import { HistoryBook } from './components/HistoryBook'
 import { TimeMachine } from './components/TimeMachine'
 import { Welcome } from './components/Welcome'
 import { WelcomeBack } from './components/WelcomeBack'
+import { YearReport } from './components/YearReport'
 import { shareCard } from './share'
 import { useWorld } from './useWorld'
 
@@ -66,6 +67,7 @@ export default function App() {
       {tm && <TimeMachine snapshots={w.snapshots} onTravel={w.travel} onClose={() => setTm(false)} />}
       {gift && <GiftPanel onExport={w.exportWorld} onImport={w.importWorld} onClose={() => setGift(false)} />}
       {w.away && <WelcomeBack away={w.away} onFF={w.fastForward} onClose={w.dismissAway} />}
+      {w.yearReport && !w.away && <YearReport r={w.yearReport} onClose={w.dismissYearReport} />}
       {toast && <div className="card fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 text-[13px]">{toast}</div>}
     </>
   )
