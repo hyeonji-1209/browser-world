@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Creature } from './sim/creature'
 import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
-import { fetchSystem, heatOf, nightOf, pollutionOf, type SystemStats } from './sim/system'
+import { fetchSystem, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from './sim/system'
 import { cloudOf, fetchWeather, rainOf, realNightOf, snowOf, tempStressOf, thunderOf, type Weather } from './sim/weather'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 
@@ -16,6 +16,7 @@ export function useWorld() {
   const [stats, setStats] = useState<WorldStats | null>(null)
   const [history, setHistory] = useState<Sample[]>([])
   const [event, setEvent] = useState('')
+  const [feed, setFeed] = useState<string[]>([])
   const [activity, setActivity] = useState<Activity | null>(null)
   const [system, setSystem] = useState<SystemStats | null>(null)
   const [weather, setWeather] = useState<Weather | null>(null)
@@ -53,11 +54,13 @@ export function useWorld() {
       const sel = selectedRef.current
       if (sel && !world.creatures.includes(sel)) { selectedRef.current = null; setSelected(null) }
       world.draw(ctx, selectedRef.current)
-      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); bump((n) => n + 1) }
+      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); bump((n) => n + 1) }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     loadActivity(defaultUser())
+    const q = new URLSearchParams(location.search)
+    if (q.has('wind')) world.wind = Math.min(1, Number(q.get('wind')) || 0)
     const pollWeather = async () => {
       const wx = await fetchWeather()
       if (!wx) return
@@ -76,6 +79,7 @@ export function useWorld() {
       setSystem(st)
       world.heat = heatOf(st)
       world.pollution = pollutionOf(st)
+      world.wind = windOf(st)
       systemNightRef.current = st.battery_pct == null ? null : nightOf(st)
       world.night = Math.max(systemNightRef.current ?? 0, weatherNightRef.current)
     }
@@ -120,5 +124,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, activity, system, weather, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

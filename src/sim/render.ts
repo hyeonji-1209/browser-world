@@ -119,6 +119,20 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     }
   }
 
+  // 바람 줄기
+  if (w.wind > 0.05) {
+    ctx.strokeStyle = `rgba(148,163,184,${0.15 + w.wind * 0.25})`; ctx.lineWidth = 1.5
+    const n = 8 + w.wind * 25
+    for (let i = 0; i < n; i++) {
+      const y = (i * 167 + Math.sin(i) * 40) % w.H
+      const x = (i * 311 + frame * (4 + w.wind * 14)) % (w.W + 120) - 60
+      const len = 25 + w.wind * 50
+      ctx.beginPath(); ctx.moveTo(x, y)
+      ctx.bezierCurveTo(x + len * 0.4, y - 4, x + len * 0.7, y + 4, x + len, y)
+      ctx.stroke()
+    }
+  }
+
   // 비
   if (w.rain > 0) {
     ctx.strokeStyle = `rgba(96,165,250,${0.35 + w.rain * 0.3})`; ctx.lineWidth = 1
@@ -140,18 +154,36 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     }
   }
 
-  // 먹이: 열매
-  ctx.fillStyle = FOOD_COLOR[w.season]
+  // 먹이: 계절마다 다른 모양
+  const fc = FOOD_COLOR[w.season]
   for (const f of w.food) {
-    ctx.beginPath(); ctx.arc(f.x, f.y, 2.5, 0, Math.PI * 2); ctx.fill()
+    if (w.season === '봄') {
+      // 꽃
+      ctx.fillStyle = fc
+      for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * 2.2, f.y + Math.sin(a) * 2.2, 1.6, 0, Math.PI * 2); ctx.fill() }
+      ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(f.x, f.y, 1.4, 0, Math.PI * 2); ctx.fill()
+    } else if (w.season === '가을') {
+      // 버섯
+      ctx.fillStyle = '#fef3c7'; ctx.fillRect(f.x - 1, f.y, 2, 3)
+      ctx.fillStyle = fc; ctx.beginPath(); ctx.arc(f.x, f.y, 3, Math.PI, 0); ctx.fill()
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(f.x - 1, f.y - 1.5, 0.7, 0, Math.PI * 2); ctx.fill()
+    } else if (w.season === '겨울') {
+      // 얼음열매
+      ctx.fillStyle = fc; ctx.beginPath(); ctx.arc(f.x, f.y, 2.5, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(f.x - 0.8, f.y - 0.8, 1, 0, Math.PI * 2); ctx.fill()
+    } else {
+      // 여름 열매
+      ctx.fillStyle = fc; ctx.beginPath(); ctx.arc(f.x, f.y, 2.5, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(f.x, f.y - 2); ctx.lineTo(f.x + 1.5, f.y - 5); ctx.stroke()
+    }
   }
-  ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1
-  for (const f of w.food) { ctx.beginPath(); ctx.moveTo(f.x, f.y - 2); ctx.lineTo(f.x + 1.5, f.y - 5); ctx.stroke() }
 
   // 생명체 (y 순으로 그려 겹침 자연스럽게)
   const sorted = [...w.creatures].sort((a, b) => a.y - b.y)
   for (const c of sorted) {
-    const r = c.genes.size * 1.6
+    const grow = Math.min(1, 0.45 + (c.age / 600) * 0.55) // 아기는 작게 태어나 자람
+    const r = c.genes.size * 1.6 * grow
     const bounce = Math.abs(Math.sin((frame + c.id * 7) * 0.15)) * c.genes.speed * 1.2
     const color = c.infected
       ? `hsl(${c.genes.hue},25%,70%)`

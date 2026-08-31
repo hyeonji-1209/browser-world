@@ -14,6 +14,8 @@ export class World {
   W = 0
   H = 0
   lastEvent = ''
+  /** 친근한 소식 피드 (최신이 앞) */
+  feed: string[] = []
   /** 외부 활동(GitHub 등)으로 인한 먹이 배율 */
   activityMul = 1
   /** 컴퓨터 CPU → 열 (0~1) */
@@ -28,6 +30,8 @@ export class World {
   cloud = 0
   thunder = 0
   tempStress = 0
+  /** 네트워크 → 바람 (0~1). 먹이가 날리고 가벼운 개체가 밀림 */
+  wind = 0
   /** 렌더러가 소비하는 순간 이펙트 */
   effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet'; x: number; y: number; t: number; text?: string }[] = []
 
@@ -84,8 +88,15 @@ export class World {
   outbreak() {
     const healthy = this.creatures.filter((c) => !c.infected && !c.immune)
     if (!healthy.length) return
-    healthy[Math.floor(Math.random() * healthy.length)].infected = CFG.diseaseDuration
+    const sick = healthy[Math.floor(Math.random() * healthy.length)]
+    sick.infected = CFG.diseaseDuration
     this.lastEvent = `tick ${this.tick}: 질병 발생`
+    this.say(`${sick.name}가 콜록콜록… 🤒 거리를 두세요`)
+  }
+
+  say(msg: string) {
+    this.feed.unshift(msg)
+    if (this.feed.length > 4) this.feed.pop()
   }
 
   private bury(c: Creature, cause: string) {
@@ -126,6 +137,15 @@ export class World {
 
   step() {
     this.tick++
+    if (this.wind > 0) {
+      const wx = this.wind * 0.9, wy = Math.sin(this.tick * 0.01) * this.wind * 0.2
+      for (const f of this.food) {
+        f.x += wx; f.y += wy
+        if (f.x > this.W) f.x -= this.W
+        if (f.y > this.H) f.y -= this.H
+        if (f.y < 0) f.y += this.H
+      }
+    }
     if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3) * (1 + this.rain * 1.5)) this.spawnFood(1)
     if (this.thunder && Math.random() < 0.004) this.effects.push({ kind: 'lightning', x: rnd(0, this.W), y: 0, t: 0 })
     if (Math.random() < CFG.outbreakChance * (1 + this.pollution * 8)) this.outbreak()
@@ -134,12 +154,25 @@ export class World {
     const born: Creature[] = []
     for (const c of this.creatures) {
       if (dead.has(c)) continue
-      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat, this.night, this.tempStress)
+      const r = c.update(this.food, this.creatures, this.W, this.H, this.heat, this.night, this.tempStress, this.wind)
       if (r.ate && Math.random() < 0.5) this.effects.push({ kind: 'eat', x: c.x, y: c.y - c.genes.size * 2, t: 0, text: c.isPredator ? '앙' : '냠' })
       if (r.child) this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 })
-      if (r.killed && !dead.has(r.killed)) { dead.add(r.killed); this.bury(r.killed, '포식'); this.effects.push({ kind: 'death', x: r.killed.x, y: r.killed.y, t: 0 }) }
+      if (r.killed && !dead.has(r.killed)) {
+        dead.add(r.killed); this.bury(r.killed, '포식'); this.effects.push({ kind: 'death', x: r.killed.x, y: r.killed.y, t: 0 })
+        if (Math.random() < 0.25) this.say(`${r.killed.name}, ${c.family} 여우에게… 😢`)
+      }
       if (!r.alive) { dead.add(c); this.bury(c, r.cause!); this.effects.push({ kind: 'death', x: c.x, y: c.y, t: 0 }) }
-      if (r.child) born.push(r.child)
+      if (r.child) {
+        born.push(r.child)
+        if (Math.random() < 0.12) this.say(`${r.child.name}${r.child.isPredator ? ' 🦊' : ''} 태어났어요 🎉`)
+      }
+    }
+    // 가문 멸종 감지
+    if (dead.size) {
+      const gone = new Set([...dead].filter((d) => !d.isPredator).map((d) => d.family))
+      const alive = new Set(this.creatures.filter((c) => !dead.has(c) && !c.isPredator).map((c) => c.family))
+      for (const b of born) if (!b.isPredator) alive.add(b.family)
+      for (const f of gone) if (!alive.has(f)) this.say(`${f}가의 마지막 아이가 떠났어요 🕯`)
     }
     this.creatures = this.creatures.filter((c) => !dead.has(c)).concat(born)
     for (const e of this.effects) e.t++

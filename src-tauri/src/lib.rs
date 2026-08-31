@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::sync::Mutex;
-use sysinfo::System;
+use sysinfo::{Networks, System};
 use tauri::State;
 
 #[derive(Serialize)]
@@ -13,9 +13,10 @@ struct SystemStats {
   uptime_secs: u64,
   battery_pct: Option<f32>,
   charging: bool,
+  net_bps: f64, // 최근 폴링 구간의 초당 송수신 바이트
 }
 
-struct SysState(Mutex<System>);
+struct SysState(Mutex<System>, Mutex<Networks>, Mutex<std::time::Instant>);
 
 #[tauri::command]
 fn system_stats(state: State<SysState>) -> SystemStats {
@@ -23,6 +24,15 @@ fn system_stats(state: State<SysState>) -> SystemStats {
   sys.refresh_cpu_usage();
   sys.refresh_memory();
   sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+  let net_bps = {
+    let mut nets = state.1.lock().unwrap();
+    let mut last = state.2.lock().unwrap();
+    nets.refresh(true);
+    let secs = last.elapsed().as_secs_f64().max(0.5);
+    *last = std::time::Instant::now();
+    let bytes: u64 = nets.iter().map(|(_, d)| d.received() + d.transmitted()).sum();
+    bytes as f64 / secs
+  };
   let (battery_pct, charging) = read_battery();
   let mem_used = sys.used_memory();
   let mem_total = sys.total_memory().max(1);
@@ -35,6 +45,7 @@ fn system_stats(state: State<SysState>) -> SystemStats {
     uptime_secs: System::uptime(),
     battery_pct,
     charging,
+    net_bps,
   }
 }
 
@@ -68,7 +79,7 @@ pub fn run() {
   let mut sys = System::new_all();
   sys.refresh_all();
   tauri::Builder::default()
-    .manage(SysState(Mutex::new(sys)))
+    .manage(SysState(Mutex::new(sys), Mutex::new(Networks::new_with_refreshed_list()), Mutex::new(std::time::Instant::now())))
     .invoke_handler(tauri::generate_handler![system_stats, save_png])
     .setup(|app| {
       if cfg!(debug_assertions) {

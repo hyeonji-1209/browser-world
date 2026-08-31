@@ -89,7 +89,7 @@ export class Creature {
     return { best, bd }
   }
 
-  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0, night = 0, tempStress = 0): UpdateResult {
+  update(food: Food[], creatures: Creature[], W: number, H: number, heat = 0, night = 0, tempStress = 0, wind = 0): UpdateResult {
     const g = this.genes
     this.age++
     // 열: 빨라지지만(최대 +40%) 대사도 늘어남(최대 +60%)
@@ -149,6 +149,8 @@ export class Creature {
 
     this.x += Math.cos(this.dir) * g.speed * speedMul
     this.y += Math.sin(this.dir) * g.speed * speedMul
+    // 바람: 작을수록 잘 밀림 (크기 1.5~12)
+    if (wind > 0) this.x += wind * Math.max(0.1, 1.1 - g.size / 12)
     if (this.x < 0 || this.x > W) { this.dir = Math.PI - this.dir; this.x = clamp(this.x, 0, W) }
     if (this.y < 0 || this.y > H) { this.dir = -this.dir; this.y = clamp(this.y, 0, H) }
 
