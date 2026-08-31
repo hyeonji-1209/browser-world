@@ -2,19 +2,23 @@
 
 html, body, #root { height: 100%; margin: 0; }
 body {
-  background: #fdf2f8; color: #4a4458;
-  font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  background: #fdf2f8; color: #5c5470;
+  font-family: "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
   overflow: hidden;
 }
+/* 제목·버튼용 손글씨 느낌 */
+.font-cute { font-family: "Gaegu", "Gowun Dodum", sans-serif; letter-spacing: 0.01em; }
+
 .card {
-  background: rgba(255,255,255,.75); backdrop-filter: blur(8px);
-  border: 2px solid #fbcfe8; border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(244,114,182,.15);
+  background: rgba(255,253,250,.82); backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(251,207,232,.8); border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(244,114,182,.12);
 }
 .btn {
-  background: #fff; border: 2px solid #fbcfe8; border-radius: 999px;
-  padding: 6px 14px; font-size: 13px; font-weight: 600; color: #6b5b7b; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(244,114,182,.15); transition: transform .1s;
+  background: rgba(255,255,255,.9); border: 1.5px solid rgba(251,207,232,.9); border-radius: 999px;
+  padding: 7px 15px; font-size: 14px; color: #6b5b7b; cursor: pointer;
+  font-family: "Gaegu", "Gowun Dodum", sans-serif; font-weight: 700;
+  box-shadow: 0 3px 10px rgba(244,114,182,.14); transition: transform .12s, background .12s;
 }
-.btn:hover { background: #fdf2f8; transform: translateY(-2px); }
-.btn:active { transform: scale(.95); }
+.btn:hover { background: #fdf2f8; transform: translateY(-2px) rotate(-1deg); }
+.btn:active { transform: scale(.93); }

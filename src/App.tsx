@@ -22,6 +22,7 @@ export default function App() {
   const [book, setBook] = useState(false)
   const [tm, setTm] = useState(false)
   const [gift, setGift] = useState(false)
+  const [more, setMore] = useState(false)
   const snap = async () => {
     const world = w.worldRef.current, cv = w.canvasRef.current
     if (!world || !cv) return
@@ -47,21 +48,28 @@ export default function App() {
       <ActivityCard a={w.activity} onUser={w.setUser} />
       <SystemCard s={w.system} survey={w.survey} onSurvey={w.toggleSurvey} />
       {w.selected && <Panel c={w.selected} lineage={w.lineage(w.selected)} />}
-      <div className="fixed bottom-3 left-3 flex gap-1.5 items-center flex-wrap">
-        <button className={btn} onClick={() => w.setPaused(!w.paused)} title="세계를 잠깐 멈춰요">⏯ 일시정지</button>
+      <div className="fixed bottom-3 left-3 flex gap-1.5 items-center">
+        <button className={btn} onClick={() => w.setPaused(!w.paused)} title={w.paused ? '다시 흐르게 해요' : '세계를 잠깐 멈춰요'}>{w.paused ? '▶' : '⏸'}</button>
         <button className={btn} onClick={() => w.setSpeed(w.speed === 1 ? 4 : w.speed === 4 ? 10 : 1)} title="시간을 빨리 감아요 (1→4→10배)">⏩ x{w.speed}</button>
-        <span className="w-1.5" />
-        <button className={btn} onClick={() => w.spawnFood(60)} title="먹이 60개를 선물해요">🌱 먹이 뿌리기</button>
-        <button className={btn} onClick={w.spawnPredator} title="여우 한 마리를 풀어놔요">🦊 포식자 추가</button>
-        <button className={btn} onClick={w.outbreak} title="무작위 한 마리가 병에 걸려요">🦠 질병 퍼뜨리기</button>
-        <span className="w-1.5" />
-        <button className={btn} onClick={() => setBook((b) => !b)} title="명예의 전당과 사라진 가문들">📖 역사책</button>
-        <button className={btn} onClick={() => { setTm((v) => !v); setBook(false); setGift(false) }} title="과거의 세계로 돌아가요 (3,000틱마다 자동 기록)">⏪ 타임머신</button>
-        <button className={btn} onClick={() => { setGift((v) => !v); setBook(false); setTm(false) }} title="세계를 파일로 주고받아요">🎁 선물</button>
+        <button className={btn} onClick={() => w.spawnFood(60)} title="먹이 60개를 선물해요">🌱 먹이 주기</button>
         <button className={btn} onClick={w.toggleSound} title="귀여운 효과음 켜기/끄기">{w.sound ? '🔊' : '🔇'}</button>
-        <button className={btn} onClick={snap} title="지금 세계를 카드로 저장해요">📸 오늘의 세계</button>
-        <button className={btn} onClick={w.reset} title="저장을 지우고 처음부터! 신중히…">🔄 새 세계</button>
+        <button className={btn} onClick={() => { setMore((v) => !v); setBook(false); setTm(false); setGift(false) }} title="놀거리 더 보기">{more ? '✕' : '⋯ 더보기'}</button>
       </div>
+      {more && (
+        <div className="card fixed bottom-16 left-3 px-2 py-2 z-10 flex flex-col w-[190px]">
+          {([
+            ['🦊 여우 풀어놓기', () => w.spawnPredator()],
+            ['🦠 질병 퍼뜨리기', () => w.outbreak()],
+            ['📖 역사책', () => setBook(true)],
+            ['⏪ 타임머신', () => setTm(true)],
+            ['🎁 세계 선물하기', () => setGift(true)],
+            ['📸 오늘의 세계 저장', () => snap()],
+            ['🔄 새 세계 (초기화)', () => { if (window.confirm('정말 처음부터 다시 시작할까요?\n지금 세계와 저장이 사라져요.')) w.reset() }],
+          ] as [string, () => void][]).map(([label, fn]) => (
+            <button key={label} className="font-cute text-left text-[14px] px-3 py-1.5 rounded-xl hover:bg-pink-50 cursor-pointer" onClick={() => { fn(); setMore(false) }}>{label}</button>
+          ))}
+        </div>
+      )}
       <Welcome />
       {book && w.worldRef.current && <HistoryBook world={w.worldRef.current} onClose={() => setBook(false)} />}
       {tm && <TimeMachine snapshots={w.snapshots} onTravel={w.travel} onClose={() => setTm(false)} />}

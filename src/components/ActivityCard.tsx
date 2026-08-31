@@ -7,7 +7,7 @@ export function ActivityCard({ a, onUser }: { a: Activity | null; onUser: (u: st
   const [val, setVal] = useState(a?.user ?? '')
   if (!a) return null
   return (
-    <Card id="github" title="🐙 GitHub 연동" className="fixed bottom-[120px] right-3 z-10 w-[300px]">
+    <Card id="github" title="🐙 GitHub 연동" defaultFolded className="fixed bottom-[120px] right-3 z-10 w-[300px]">
       <div className="flex items-center justify-end">
         {editing ? (
           <form onSubmit={(e) => { e.preventDefault(); onUser(val.trim()); setEditing(false) }}>

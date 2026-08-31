@@ -28,7 +28,7 @@ export function SystemCard({ s, survey, onSurvey }: { s: SystemStats | null; sur
     setTimeout(() => setCalmMsg(''), 5000)
   }
   return (
-    <Card id="system" title="💻 내 컴퓨터가 곧 날씨" className="fixed top-3 left-1/2 -translate-x-1/2 w-[280px]">
+    <Card id="system" title="💻 내 컴퓨터가 곧 날씨" defaultFolded className="fixed top-3 left-1/2 -translate-x-1/2 w-[280px]">
       <Meter label={`🔥 열 (CPU ${s.cpu.toFixed(0)}%)`} v={heat} color="#fb7185"
         note={heat < 0.3 ? '쾌적' : heat < 0.7 ? '생명체가 빨라짐' : '폭염! 대사 폭증'} />
       {culprit && (

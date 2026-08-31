@@ -13,7 +13,8 @@ const LINES: { key: keyof Sample; color: string; max: number; label: string }[] 
 export function Graph({ history }: { history: Sample[] }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
-    const cv = ref.current!
+    const cv = ref.current
+    if (!cv) return // 카드가 접혀 있으면 캔버스가 없음
     const ctx = cv.getContext('2d')!
     const W = cv.width, H = cv.height
     ctx.clearRect(0, 0, W, H)
@@ -31,7 +32,7 @@ export function Graph({ history }: { history: Sample[] }) {
     }
   }, [history])
   return (
-    <Card id="graph" title="📈 세계의 흐름" className="fixed bottom-3 right-3">
+    <Card id="graph" title="📈 세계의 흐름" defaultFolded className="fixed bottom-3 right-3">
       <canvas ref={ref} width={300} height={80} className="block" />
       <div className="flex gap-2 text-[11px] mt-1">
         {LINES.map((l) => (
