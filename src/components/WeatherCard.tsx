@@ -1,4 +1,5 @@
 import { describe, type Weather } from '../sim/weather'
+import { Card } from './Card'
 
 export function WeatherCard({ w }: { w: Weather | null }) {
   if (!w) return null
@@ -10,10 +11,9 @@ export function WeatherCard({ w }: { w: Weather | null }) {
   if (w.temp < 5) effects.push('추워서 지침')
   if (!w.isDay) effects.push('밤이라 잠')
   return (
-    <div className="card fixed top-[150px] left-3 px-4 py-3 text-[13px] leading-relaxed">
-      <div className="font-semibold">🌤 바깥 날씨 <span className="text-[#9a8fae] text-xs font-normal">{w.place}</span></div>
+    <Card id="weather" title={<>🌤 바깥 날씨 <span className="text-[#9a8fae] text-xs font-normal">{w.place}</span></>} className="w-full">
       <div>{describe(w.code)} · <b>{w.temp.toFixed(0)}°C</b> · 습도 {w.humidity}%</div>
       <div className="text-xs text-[#9a8fae]">{effects.length ? effects.join(' · ') : '평화로운 하루'}</div>
-    </div>
+    </Card>
   )
 }

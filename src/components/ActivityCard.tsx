@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { foodMulOf, type Activity } from '../sim/activity'
+import { Card } from './Card'
 
 export function ActivityCard({ a, onUser }: { a: Activity | null; onUser: (u: string) => void }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(a?.user ?? '')
   if (!a) return null
   return (
-    <div className="card fixed bottom-[120px] right-3 z-10 px-4 py-3 text-[13px] leading-relaxed w-[300px]">
-      <div className="flex items-center justify-between">
-        <span className="font-semibold">🐙 GitHub 연동</span>
+    <Card id="github" title="🐙 GitHub 연동" className="fixed bottom-[120px] right-3 z-10 w-[300px]">
+      <div className="flex items-center justify-end">
         {editing ? (
           <form onSubmit={(e) => { e.preventDefault(); onUser(val.trim()); setEditing(false) }}>
             <input className="border border-pink-200 rounded-full px-2 py-0.5 text-xs w-[130px]" value={val} onChange={(e) => setVal(e.target.value)} autoFocus />
@@ -29,6 +29,6 @@ export function ActivityCard({ a, onUser }: { a: Activity | null; onUser: (u: st
           <div className="text-[11px] text-[#9a8fae] mt-1">코딩한 만큼 세계가 풍요로워져요 🌱</div>
         </>
       )}
-    </div>
+    </Card>
   )
 }

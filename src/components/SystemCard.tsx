@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Card } from './Card'
 import { cleanHint, fmtSize, sourceLabel } from '../sim/cleaner'
 import { calmProcess, dryOf, fmtBps, fmtGB, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from '../sim/system'
 
@@ -27,8 +28,7 @@ export function SystemCard({ s, survey, onSurvey }: { s: SystemStats | null; sur
     setTimeout(() => setCalmMsg(''), 5000)
   }
   return (
-    <div className="card fixed top-3 left-1/2 -translate-x-1/2 px-4 py-3 text-[13px] leading-relaxed w-[280px]">
-      <div className="font-semibold mb-1">💻 내 컴퓨터가 곧 날씨</div>
+    <Card id="system" title="💻 내 컴퓨터가 곧 날씨" className="fixed top-3 left-1/2 -translate-x-1/2 w-[280px]">
       <Meter label={`🔥 열 (CPU ${s.cpu.toFixed(0)}%)`} v={heat} color="#fb7185"
         note={heat < 0.3 ? '쾌적' : heat < 0.7 ? '생명체가 빨라짐' : '폭염! 대사 폭증'} />
       {culprit && (
@@ -62,6 +62,6 @@ export function SystemCard({ s, survey, onSurvey }: { s: SystemStats | null; sur
         </div>
       )}
       <div className="text-[11px] text-[#9a8fae]">프로세스 {s.process_count}개 · 켠 지 {(s.uptime_secs / 3600).toFixed(1)}시간</div>
-    </div>
+    </Card>
   )
 }

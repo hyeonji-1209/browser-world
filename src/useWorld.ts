@@ -160,6 +160,11 @@ export function useWorld() {
   }
   const stopPet = () => { if (petTimer.current) { clearInterval(petTimer.current); petTimer.current = null } }
 
+  const hoverAt = (x: number, y: number) => {
+    const w = worldRef.current
+    if (w) w.hover = w.nearest(x, y, 25)
+  }
+
   const select = (x: number, y: number) => {
     const c = worldRef.current?.nearest(x, y) ?? null
     selectedRef.current = c
@@ -173,5 +178,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, hoverAt, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

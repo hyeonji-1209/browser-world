@@ -39,6 +39,9 @@ export class World {
   dry = 0
   /** 복원 시 이전 저장 시각 (브리핑용) */
   lastSavedAt: number | null = null
+  /** 마우스가 올라가 있는 개체 (이름표) */
+  hover: Creature | null = null
+  private lastCrisisSay = -9999
   /** 렌더러가 소비하는 순간 이펙트 */
   effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet'; x: number; y: number; t: number; text?: string }[] = []
   /** 프론트가 꺼내 재생하는 소리 큐 */
@@ -232,7 +235,16 @@ export class World {
     if (this.effects.length > 200) this.effects.splice(0, this.effects.length - 200)
 
     // 전멸 방지
-    if (!this.creatures.some((c) => !c.isPredator)) for (let i = 0; i < 10; i++) this.spawn('prey')
+    if (!this.creatures.some((c) => !c.isPredator)) {
+      for (let i = 0; i < 10; i++) this.spawn('prey')
+      this.say('새로운 아이들이 이사 왔어요 🌱 이번엔 잘 부탁해요')
+    }
+    // 위기 안내: 세계가 먼저 도움을 청함
+    const preyCount = this.creatures.reduce((n, c) => n + (c.isPredator ? 0 : 1), 0)
+    if (preyCount > 0 && preyCount < 12 && this.tick - this.lastCrisisSay > 3000) {
+      this.lastCrisisSay = this.tick
+      this.say('아이들이 얼마 안 남았어요… 🌱 먹이 뿌리기로 도와줄 수 있어요')
+    }
     if (!this.creatures.some((c) => c.isPredator) && this.tick % 1500 === 0) for (let i = 0; i < 2; i++) this.spawn('predator')
 
     if (this.tick % CFG.sampleEvery === 0) {

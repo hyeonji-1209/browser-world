@@ -31,22 +31,27 @@ export default function App() {
         ref={w.canvasRef}
         className="block cursor-crosshair"
         onClick={(e) => w.select(e.clientX, e.clientY)}
+        onPointerMove={(e) => w.hoverAt(e.clientX, e.clientY)}
         onPointerDown={(e) => w.startPet(e.clientX, e.clientY)}
         onPointerUp={w.stopPet}
         onPointerLeave={w.stopPet}
       />
-      <Hud stats={w.stats} paused={w.paused} event={w.event} feed={w.feed} />
+      <div className="fixed top-3 left-3 flex flex-col gap-2 w-[260px]">
+        <Hud stats={w.stats} paused={w.paused} event={w.event} feed={w.feed} />
+        <WeatherCard w={w.weather} />
+      </div>
       <Graph history={w.history} />
       <ActivityCard a={w.activity} onUser={w.setUser} />
       <SystemCard s={w.system} survey={w.survey} onSurvey={w.toggleSurvey} />
-      <WeatherCard w={w.weather} />
       {w.selected && <Panel c={w.selected} lineage={w.lineage(w.selected)} />}
-      <div className="fixed bottom-3 left-3 flex gap-1.5">
+      <div className="fixed bottom-3 left-3 flex gap-1.5 items-center flex-wrap">
         <button className={btn} onClick={() => w.setPaused(!w.paused)} title="세계를 잠깐 멈춰요">⏯ 일시정지</button>
         <button className={btn} onClick={() => w.setSpeed(w.speed === 1 ? 4 : w.speed === 4 ? 10 : 1)} title="시간을 빨리 감아요 (1→4→10배)">⏩ x{w.speed}</button>
+        <span className="w-1.5" />
         <button className={btn} onClick={() => w.spawnFood(60)} title="먹이 60개를 선물해요">🌱 먹이 뿌리기</button>
         <button className={btn} onClick={w.spawnPredator} title="여우 한 마리를 풀어놔요">🦊 포식자 추가</button>
         <button className={btn} onClick={w.outbreak} title="무작위 한 마리가 병에 걸려요">🦠 질병 퍼뜨리기</button>
+        <span className="w-1.5" />
         <button className={btn} onClick={() => setBook((b) => !b)} title="명예의 전당과 사라진 가문들">📖 역사책</button>
         <button className={btn} onClick={() => { setTm((v) => !v); setBook(false) }} title="과거의 세계로 돌아가요 (3,000틱마다 자동 기록)">⏪ 타임머신</button>
         <button className={btn} onClick={w.toggleSound} title="귀여운 효과음 켜기/끄기">{w.sound ? '🔊' : '🔇'}</button>

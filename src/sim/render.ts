@@ -259,6 +259,18 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
   ctx.globalAlpha = 1
   ctx.textAlign = 'start'
 
+  // 마우스 오버 이름표 (은은하게)
+  const hov = w.hover
+  if (hov && hov !== selected && w.creatures.includes(hov)) {
+    const r = hov.genes.size * 1.6
+    ctx.textAlign = 'center'; ctx.font = '11px sans-serif'
+    const tw = ctx.measureText(hov.name).width + 10
+    ctx.fillStyle = 'rgba(255,255,255,.75)'
+    ctx.beginPath(); ctx.roundRect(hov.x - tw / 2, hov.y - r - 22, tw, 15, 8); ctx.fill()
+    ctx.fillStyle = '#8a7f9e'; ctx.fillText(hov.name, hov.x, hov.y - r - 11)
+    ctx.textAlign = 'start'
+  }
+
   if (selected) {
     const r = selected.genes.size * 1.6
     ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 2

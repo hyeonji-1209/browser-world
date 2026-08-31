@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Sample } from '../sim/types'
+import { Card } from './Card'
 
 const LINES: { key: keyof Sample; color: string; max: number; label: string }[] = [
   { key: 'pop', color: '#8b7fa8', max: 300, label: '개체' },
@@ -30,13 +31,13 @@ export function Graph({ history }: { history: Sample[] }) {
     }
   }, [history])
   return (
-    <div className="card fixed bottom-3 right-3 p-3">
+    <Card id="graph" title="📈 세계의 흐름" className="fixed bottom-3 right-3">
       <canvas ref={ref} width={300} height={80} className="block" />
       <div className="flex gap-2 text-[11px] mt-1">
         {LINES.map((l) => (
           <span key={l.key} style={{ color: l.color }}>■ {l.label}</span>
         ))}
       </div>
-    </div>
+    </Card>
   )
 }
