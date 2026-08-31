@@ -10,6 +10,8 @@ export interface SystemStats {
   charging: boolean
   net_bps: number
   top_procs: { pid: number; name: string; cpu: number }[]
+  disk_free: number
+  disk_total: number
 }
 
 export const isTauri = () => '__TAURI_INTERNALS__' in window
@@ -39,6 +41,13 @@ export const windOf = (s: SystemStats | null) => {
 export const fmtBps = (b: number) => (b > 1e6 ? (b / 1e6).toFixed(1) + 'MB/s' : (b / 1e3).toFixed(0) + 'KB/s')
 
 export const fmtGB = (b: number) => (b / 1024 ** 3).toFixed(1) + 'GB'
+
+/** 디스크 여유 → 메마름 (0~1). 여유 25% 아래부터 마르기 시작, 8%에 완전 사막 */
+export const dryOf = (s: SystemStats | null) => {
+  if (!s || !s.disk_total) return 0
+  const free = s.disk_free / s.disk_total
+  return Math.min(1, Math.max(0, (0.25 - free) / 0.17))
+}
 
 /** 사용자가 버튼으로 직접 지목한 프로세스에만 정중한 종료 요청(SIGTERM) */
 export async function calmProcess(pid: number, expectedName: string): Promise<string> {

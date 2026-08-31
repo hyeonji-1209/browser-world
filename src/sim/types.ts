@@ -26,6 +26,8 @@ export interface Ghost {
   died: number
   children: number
   cause: string
+  age?: number
+  petted?: number
 }
 
 export type Season = '봄' | '여름' | '가을' | '겨울'

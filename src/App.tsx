@@ -5,7 +5,9 @@ import { WeatherCard } from './components/WeatherCard'
 import { Graph } from './components/Graph'
 import { Panel } from './components/Panel'
 import { useState } from 'react'
+import { HistoryBook } from './components/HistoryBook'
 import { Welcome } from './components/Welcome'
+import { WelcomeBack } from './components/WelcomeBack'
 import { shareCard } from './share'
 import { useWorld } from './useWorld'
 
@@ -14,6 +16,7 @@ const btn = 'btn'
 export default function App() {
   const w = useWorld()
   const [toast, setToast] = useState('')
+  const [book, setBook] = useState(false)
   const snap = async () => {
     const world = w.worldRef.current, cv = w.canvasRef.current
     if (!world || !cv) return
@@ -42,10 +45,13 @@ export default function App() {
         <button className={btn} onClick={() => w.spawnFood(60)} title="먹이 60개를 선물해요">🌱 먹이 뿌리기</button>
         <button className={btn} onClick={w.spawnPredator} title="여우 한 마리를 풀어놔요">🦊 포식자 추가</button>
         <button className={btn} onClick={w.outbreak} title="무작위 한 마리가 병에 걸려요">🦠 질병 퍼뜨리기</button>
+        <button className={btn} onClick={() => setBook((b) => !b)} title="명예의 전당과 사라진 가문들">📖 역사책</button>
         <button className={btn} onClick={snap} title="지금 세계를 카드로 저장해요">📸 오늘의 세계</button>
         <button className={btn} onClick={w.reset} title="저장을 지우고 처음부터! 신중히…">🔄 새 세계</button>
       </div>
       <Welcome />
+      {book && w.worldRef.current && <HistoryBook world={w.worldRef.current} onClose={() => setBook(false)} />}
+      {w.away && <WelcomeBack away={w.away} onFF={w.fastForward} onClose={w.dismissAway} />}
       {toast && <div className="card fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 text-[13px]">{toast}</div>}
     </>
   )

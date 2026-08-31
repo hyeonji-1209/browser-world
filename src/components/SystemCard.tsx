@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cleanHint, fmtSize, sourceLabel } from '../sim/cleaner'
-import { calmProcess, fmtBps, fmtGB, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from '../sim/system'
+import { calmProcess, dryOf, fmtBps, fmtGB, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from '../sim/system'
 
 export interface Survey { active: boolean; total: number; bySource: Record<string, number> }
 
@@ -18,7 +18,7 @@ function Meter({ label, v, color, note }: { label: string; v: number; color: str
 export function SystemCard({ s, survey, onSurvey }: { s: SystemStats | null; survey: Survey; onSurvey: () => void }) {
   const [calmMsg, setCalmMsg] = useState('')
   if (!s) return null
-  const heat = heatOf(s), pol = pollutionOf(s), night = nightOf(s), wind = windOf(s)
+  const heat = heatOf(s), pol = pollutionOf(s), night = nightOf(s), wind = windOf(s), dry = dryOf(s)
   const culprit = heat > 0.4 ? s.top_procs.find((p) => p.cpu > 50) : undefined
   const calm = async (pid: number, name: string) => {
     if (!window.confirm(`'${name}' 프로세스에 종료 요청을 보낼까요?\n저장 안 한 작업이 있다면 먼저 저장하세요!`)) return
@@ -42,6 +42,8 @@ export function SystemCard({ s, survey, onSurvey }: { s: SystemStats | null; sur
         note={pol === 0 ? '맑음' : pol < 0.5 ? '질병 확률 ↑' : '먹이 감소·역병'} />
       <Meter label={`🌬 바람 (네트워크 ${fmtBps(s.net_bps)})`} v={wind} color="#38bdf8"
         note={wind === 0 ? '잔잔' : wind < 0.5 ? '산들바람 · 먹이가 날림' : '강풍! 다들 밀려감'} />
+      <Meter label={`🏜 메마름 (디스크 여유 ${fmtGB(s.disk_free)})`} v={dry} color="#d4a373"
+        note={dry === 0 ? '비옥' : dry < 0.5 ? '먹이가 덜 자람' : '가뭄! 디스크 정리 필요'} />
       {s.battery_pct != null && (
         <Meter label={`🌙 밤 (배터리 ${s.battery_pct.toFixed(0)}%${s.charging ? ' ⚡' : ''})`} v={night} color="#818cf8"
           note={s.charging ? '충전 중 · 낮' : night === 0 ? '낮' : night < 0.6 ? '저녁 · 느려짐' : '깊은 밤 · 잠'} />

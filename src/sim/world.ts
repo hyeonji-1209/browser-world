@@ -35,6 +35,10 @@ export class World {
   tempStress = 0
   /** 네트워크 → 바람 (0~1). 먹이가 날리고 가벼운 개체가 밀림 */
   wind = 0
+  /** 디스크 부족 → 메마름 (0~1). 먹이가 잘 안 자람 */
+  dry = 0
+  /** 복원 시 이전 저장 시각 (브리핑용) */
+  lastSavedAt: number | null = null
   /** 렌더러가 소비하는 순간 이펙트 */
   effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet'; x: number; y: number; t: number; text?: string }[] = []
 
@@ -128,7 +132,7 @@ export class World {
   private bury(c: Creature, cause: string) {
     this.graveyard.set(c.id, {
       id: c.id, name: c.name, family: c.family, kind: c.kind, parentId: c.parentId, gen: c.gen, genes: c.genes,
-      died: this.tick, children: c.children, cause,
+      died: this.tick, children: c.children, cause, age: c.age, petted: c.petted,
     })
     // 묘지 상한: 오래된 기록부터 정리 (족보는 최근 조상만 있어도 충분)
     if (this.graveyard.size > 3000) {
@@ -140,7 +144,7 @@ export class World {
   // ── 저장 / 복원 ──
   serialize() {
     return JSON.stringify({
-      v: 1, tick: this.tick, nextId: getNextId(), W: this.W, H: this.H,
+      v: 1, savedAt: Date.now(), tick: this.tick, nextId: getNextId(), W: this.W, H: this.H,
       creatures: this.creatures, food: this.food, graveyard: [...this.graveyard.values()], history: this.history,
     })
   }
@@ -149,6 +153,7 @@ export class World {
       const d = JSON.parse(json)
       if (d.v !== 1) return false
       this.tick = d.tick
+      this.lastSavedAt = d.savedAt ?? null
       setNextId(d.nextId)
       // 창 크기가 달라졌으면 좌표 스케일
       const sx = this.W / d.W, sy = this.H / d.H
@@ -172,7 +177,7 @@ export class World {
         if (f.y < 0) f.y += this.H
       }
     }
-    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3) * (1 + this.rain * 1.5)) this.spawnFood(1)
+    if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3) * (1 + this.rain * 1.5) * (1 - this.dry * 0.35)) this.spawnFood(1)
     if (this.thunder && Math.random() < 0.004) this.effects.push({ kind: 'lightning', x: rnd(0, this.W), y: 0, t: 0 })
     if (Math.random() < CFG.outbreakChance * (1 + this.pollution * 8)) this.outbreak()
 
@@ -226,6 +231,21 @@ export class World {
       this.history.push({ tick: s.tick, pop: s.population, pred: s.predators, speed: s.avgSpeed, size: s.avgSize, sight: s.avgSight })
       if (this.history.length > 400) this.history.shift()
     }
+  }
+
+  /** 역사책: 명예의 전당 + 멸종 가문 */
+  chronicle() {
+    const all: (Creature | Ghost)[] = [...this.creatures, ...this.graveyard.values()]
+    const by = <T extends Creature | Ghost>(list: T[], f: (x: T) => number) =>
+      list.reduce<T | null>((m, x) => (m == null || f(x) > f(m) ? x : m), null)
+    const eldest = by(all, (x) => ('age' in x && x.age) || 0)
+    const parent = by(all, (x) => x.children)
+    const beloved = by(all, (x) => ('petted' in x && x.petted) || 0)
+    const livingFams = new Set(this.creatures.filter((c) => !c.isPredator).map((c) => c.family))
+    const extinct = new Map<string, Ghost>()
+    for (const g of this.graveyard.values())
+      if (g.kind === 'prey' && !livingFams.has(g.family)) extinct.set(g.family, g) // 마지막(가장 늦게 죽은) 기록이 남음
+    return { eldest, parent, beloved, extinct: [...extinct.values()].sort((a, b) => b.died - a.died).slice(0, 6) }
   }
 
   find(id: number): Creature | Ghost | undefined {

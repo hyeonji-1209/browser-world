@@ -15,6 +15,8 @@ struct SystemStats {
   charging: bool,
   net_bps: f64, // 최근 폴링 구간의 초당 송수신 바이트
   top_procs: Vec<ProcInfo>, // CPU 상위 프로세스
+  disk_free: u64,
+  disk_total: u64,
 }
 
 #[derive(Serialize)]
@@ -48,6 +50,14 @@ fn system_stats(state: State<SysState>) -> SystemStats {
     .collect();
   top.sort_by(|a, b| b.cpu.total_cmp(&a.cpu));
   top.truncate(3);
+  let (disk_free, disk_total) = {
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    disks
+      .iter()
+      .max_by_key(|d| d.total_space())
+      .map(|d| (d.available_space(), d.total_space()))
+      .unwrap_or((0, 1))
+  };
   let (battery_pct, charging) = read_battery();
   let mem_used = sys.used_memory();
   let mem_total = sys.total_memory().max(1);
@@ -62,6 +72,8 @@ fn system_stats(state: State<SysState>) -> SystemStats {
     charging,
     net_bps,
     top_procs: top,
+    disk_free,
+    disk_total: disk_total.max(1),
   }
 }
 

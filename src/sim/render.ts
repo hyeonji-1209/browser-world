@@ -96,6 +96,20 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     ctx.fillStyle = `rgba(251,113,133,${(w.heat - 0.3) * 0.25})`; ctx.fillRect(0, 0, w.W, w.H)
   }
 
+  // 메마름: 누런 톤 + 갈라진 땅
+  if (w.dry > 0) {
+    ctx.fillStyle = `rgba(180,140,80,${w.dry * 0.15})`
+    ctx.fillRect(0, 0, w.W, w.H)
+    ctx.strokeStyle = `rgba(160,120,70,${w.dry * 0.3})`
+    ctx.lineWidth = 1
+    for (let i = 0; i < w.dry * 14; i++) {
+      let x = (i * 397) % w.W, y = (i * 251) % w.H
+      ctx.beginPath(); ctx.moveTo(x, y)
+      for (let j = 0; j < 4; j++) { x += 8 + (i * 7 + j * 13) % 14; y += ((i + j) % 3 - 1) * 9; ctx.lineTo(x, y) }
+      ctx.stroke()
+    }
+  }
+
   // 구름: 회색 톤
   if (w.cloud > 0) { ctx.fillStyle = `rgba(148,163,184,${w.cloud * 0.25})`; ctx.fillRect(0, 0, w.W, w.H) }
 

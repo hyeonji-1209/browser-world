@@ -136,6 +136,14 @@ export class Creature {
             this.energy += best.trash ? CFG.foodEnergy * 2 : CFG.foodEnergy
             ate = true; this.happyTicks = 40; eaten = best
           }
+        } else if (this.age < 400 && this.parentId != null) {
+          // 아기는 심심하면 부모 곁으로
+          const parent = creatures.find((p) => p.id === this.parentId)
+          if (parent) {
+            const d = (parent.x - this.x) ** 2 + (parent.y - this.y) ** 2
+            if (d > 30 ** 2) this.dir = Math.atan2(parent.y - this.y, parent.x - this.x)
+            else this.dir += rnd(-0.4, 0.4)
+          } else this.dir += rnd(-0.3, 0.3)
         } else this.dir += rnd(-0.3, 0.3)
       }
     }

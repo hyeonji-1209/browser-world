@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Creature } from './sim/creature'
 import type { Sample, WorldStats } from './sim/types'
 import { World } from './sim/world'
-import { fetchSystem, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from './sim/system'
+import { dryOf, fetchSystem, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from './sim/system'
 import { cloudOf, fetchWeather, rainOf, realNightOf, snowOf, tempStressOf, thunderOf, type Weather } from './sim/weather'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 import { fmtSize, scanJunk } from './sim/cleaner'
@@ -22,6 +22,8 @@ export function useWorld() {
   const [system, setSystem] = useState<SystemStats | null>(null)
   const [weather, setWeather] = useState<Weather | null>(null)
   const [survey, setSurvey] = useState({ active: false, total: 0, bySource: {} as Record<string, number> })
+  const [away, setAway] = useState<{ ms: number; ticks: number } | null>(null)
+  const ffRef = useRef(0)
   const systemNightRef = useRef<number | null>(null)
   const weatherNightRef = useRef(0)
   const [selected, setSelected] = useState<Creature | null>(null)
@@ -34,7 +36,13 @@ export function useWorld() {
     const ctx = canvas.getContext('2d')!
     const world = (worldRef.current = new World(innerWidth, innerHeight))
     const SAVE_KEY = 'bw:world'
-    try { const saved = localStorage.getItem(SAVE_KEY); if (saved) world.restore(saved) } catch { /* 저장소 없음 */ }
+    try {
+      const saved = localStorage.getItem(SAVE_KEY)
+      if (saved && world.restore(saved) && world.lastSavedAt) {
+        const ms = Date.now() - world.lastSavedAt
+        if (ms > 10 * 60 * 1000) setAway({ ms, ticks: Math.min(15000, Math.floor(ms / 60000) * 100) })
+      }
+    } catch { /* 저장소 없음 */ }
     const save = () => { try { localStorage.setItem(SAVE_KEY, world.serialize()) } catch { /* 용량 초과 등 */ } }
     const saveTimer = setInterval(save, 5000)
     addEventListener('beforeunload', save)
@@ -59,6 +67,13 @@ export function useWorld() {
       if (eco && !ecoSaid) { ecoSaid = true; world.say('컴퓨터가 뜨거워서 세계도 쉬엄쉬엄… 전기를 아낄게요 🍃') }
       if (!eco) ecoSaid = false
       if (eco && frameNo % 2 === 1) { raf = requestAnimationFrame(loop); return }
+      // 다녀온 만큼 빨리 감기
+      if (ffRef.current > 0) {
+        const n = Math.min(300, ffRef.current)
+        for (let i = 0; i < n; i++) world.step()
+        ffRef.current -= n
+        if (ffRef.current === 0) world.say('세월이 다 흘렀어요 — 다시 지금이에요 ✨')
+      }
       if (!pausedRef.current) for (let i = 0; i < speedRef.current; i++) world.step()
       // 선택 개체가 죽으면 해제
       const sel = selectedRef.current
@@ -90,6 +105,7 @@ export function useWorld() {
       world.heat = heatOf(st)
       world.pollution = pollutionOf(st)
       world.wind = windOf(st)
+      world.dry = dryOf(st)
       systemNightRef.current = st.battery_pct == null ? null : nightOf(st)
       world.night = Math.max(systemNightRef.current ?? 0, weatherNightRef.current)
     }
@@ -107,6 +123,9 @@ export function useWorld() {
     if (a.today > 0) w.rainFood(a.today * 10)
   }
   const setUser = (u: string) => { saveUser(u); loadActivity(u) }
+
+  const fastForward = (ticks: number) => { ffRef.current = ticks; setAway(null) }
+  const dismissAway = () => setAway(null)
 
   /** 청소 조사 시작/중단 (읽기 전용 — 실제 삭제는 하지 않음) */
   const toggleSurvey = async () => {
@@ -145,5 +164,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }
