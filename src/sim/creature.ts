@@ -23,6 +23,7 @@ export interface UpdateResult {
   child?: Creature
   killed?: Creature
   ate?: boolean
+  eaten?: Food
 }
 
 export class Creature {
@@ -105,6 +106,7 @@ export class Creature {
 
     let killed: Creature | undefined
     let ate = false
+    let eaten: Food | undefined
     this.scared = false
     if (this.happyTicks > 0) this.happyTicks--
 
@@ -131,8 +133,8 @@ export class Creature {
           this.dir = Math.atan2(best.y - this.y, best.x - this.x)
           if (bd < (g.size + 3) ** 2) {
             food.splice(food.indexOf(best), 1)
-            this.energy += CFG.foodEnergy
-            ate = true; this.happyTicks = 40
+            this.energy += best.trash ? CFG.foodEnergy * 2 : CFG.foodEnergy
+            ate = true; this.happyTicks = 40; eaten = best
           }
         } else this.dir += rnd(-0.3, 0.3)
       }
@@ -173,6 +175,6 @@ export class Creature {
 
     const maxAge = this.isPredator ? CFG.predMaxAge : CFG.maxAge
     const cause = this.energy <= 0 ? (this.infected ? '질병' : '굶주림') : this.age >= maxAge ? '노화' : undefined
-    return { alive: !cause, cause, child, killed, ate }
+    return { alive: !cause, cause, child, killed, ate, eaten }
   }
 }

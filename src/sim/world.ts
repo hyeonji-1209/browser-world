@@ -16,6 +16,9 @@ export class World {
   lastEvent = ''
   /** 친근한 소식 피드 (최신이 앞) */
   feed: string[] = []
+  /** 청소 조사 모드: 대기 중인 캐시 뭉치 (읽기 전용 조사, 삭제 없음) */
+  junkQueue: { bytes: number; source: string }[] = []
+  survey = { active: false, total: 0, bySource: {} as Record<string, number> }
   /** 외부 활동(GitHub 등)으로 인한 먹이 배율 */
   activityMul = 1
   /** 컴퓨터 CPU → 열 (0~1) */
@@ -62,6 +65,29 @@ export class World {
 
   spawn(kind: 'prey' | 'predator') {
     this.creatures.push(new Creature(rnd(0, this.W), rnd(0, this.H), randomGenes(kind), kind))
+  }
+
+  /** 조사 시작: 뭉치들을 쓰레기로 투하 (동시에 최대 8개) */
+  startSurvey(chunks: { bytes: number; source: string }[]) {
+    this.junkQueue = [...chunks]
+    this.survey = { active: chunks.length > 0, total: 0, bySource: {} }
+    this.spawnTrash()
+  }
+
+  spawnTrash() {
+    const onField = this.food.filter((f) => f.trash).length
+    for (let i = onField; i < 8; i++) {
+      const chunk = this.junkQueue.shift()
+      if (!chunk) break
+      this.food.push({ x: rnd(40, Math.max(80, this.W - 40)), y: rnd(40, Math.max(80, this.H - 40)), trash: chunk })
+    }
+  }
+
+  /** 조사 중단: 남은 쓰레기 회수 */
+  clearTrash() {
+    this.junkQueue = []
+    this.survey.active = false
+    this.food = this.food.filter((f) => !f.trash)
   }
 
   spawnFood(n: number) {
@@ -155,6 +181,18 @@ export class World {
     for (const c of this.creatures) {
       if (dead.has(c)) continue
       const r = c.update(this.food, this.creatures, this.W, this.H, this.heat, this.night, this.tempStress, this.wind)
+      if (r.eaten?.trash) {
+        const t2 = r.eaten.trash
+        this.survey.total += t2.bytes
+        this.survey.bySource[t2.source] = (this.survey.bySource[t2.source] ?? 0) + t2.bytes
+        if (Math.random() < 0.4) this.say(`${c.name}가 캐시 뭉치를 조사했어요 🔍 (${Math.round(t2.bytes / 1e6)}MB)`)
+        this.spawnTrash()
+        if (this.survey.active && !this.junkQueue.length && !this.food.some((f) => f.trash)) {
+          this.survey.active = false
+          const gb = (this.survey.total / 1e9).toFixed(1)
+          this.say(`조사 완료! 지울 수 있는 캐시 ${gb}GB를 찾았어요 — 💻 카드에서 결과 보기`)
+        }
+      }
       if (r.ate && Math.random() < 0.5) this.effects.push({ kind: 'eat', x: c.x, y: c.y - c.genes.size * 2, t: 0, text: c.isPredator ? '앙' : '냠' })
       if (r.child) this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 })
       if (r.killed && !dead.has(r.killed)) {

@@ -5,6 +5,7 @@ import { World } from './sim/world'
 import { fetchSystem, heatOf, nightOf, pollutionOf, windOf, type SystemStats } from './sim/system'
 import { cloudOf, fetchWeather, rainOf, realNightOf, snowOf, tempStressOf, thunderOf, type Weather } from './sim/weather'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
+import { fmtSize, scanJunk } from './sim/cleaner'
 
 export function useWorld() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -20,6 +21,7 @@ export function useWorld() {
   const [activity, setActivity] = useState<Activity | null>(null)
   const [system, setSystem] = useState<SystemStats | null>(null)
   const [weather, setWeather] = useState<Weather | null>(null)
+  const [survey, setSurvey] = useState({ active: false, total: 0, bySource: {} as Record<string, number> })
   const systemNightRef = useRef<number | null>(null)
   const weatherNightRef = useRef(0)
   const [selected, setSelected] = useState<Creature | null>(null)
@@ -48,13 +50,21 @@ export function useWorld() {
 
     let raf = 0
     let lastHud = 0
+    let frameNo = 0
+    let ecoSaid = false
     const loop = (t: number) => {
+      frameNo++
+      // 절전 모드: 컴퓨터가 뜨거우면 이 앱부터 CPU를 아낌 (프레임 절반 쉬기)
+      const eco = world.heat > 0.7
+      if (eco && !ecoSaid) { ecoSaid = true; world.say('컴퓨터가 뜨거워서 세계도 쉬엄쉬엄… 전기를 아낄게요 🍃') }
+      if (!eco) ecoSaid = false
+      if (eco && frameNo % 2 === 1) { raf = requestAnimationFrame(loop); return }
       if (!pausedRef.current) for (let i = 0; i < speedRef.current; i++) world.step()
       // 선택 개체가 죽으면 해제
       const sel = selectedRef.current
       if (sel && !world.creatures.includes(sel)) { selectedRef.current = null; setSelected(null) }
       world.draw(ctx, selectedRef.current)
-      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); bump((n) => n + 1) }
+      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); setSurvey({ ...world.survey, bySource: { ...world.survey.bySource } }); bump((n) => n + 1) }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -98,6 +108,17 @@ export function useWorld() {
   }
   const setUser = (u: string) => { saveUser(u); loadActivity(u) }
 
+  /** 청소 조사 시작/중단 (읽기 전용 — 실제 삭제는 하지 않음) */
+  const toggleSurvey = async () => {
+    const w = worldRef.current
+    if (!w) return
+    if (w.survey.active || w.food.some((f) => f.trash)) return w.clearTrash()
+    const chunks = await scanJunk()
+    if (!chunks.length) return w.say('치울 만한 오래된 캐시가 없어요. 깨끗하네요 ✨')
+    w.startSurvey(chunks.map((c) => ({ bytes: c.bytes, source: c.source })))
+    w.say(`캐시 뭉치 ${chunks.length}개가 떨어져요! 젤리들이 조사할 거예요 🔍 (총 ${fmtSize(chunks.reduce((s, c) => s + c.bytes, 0))})`)
+  }
+
   const petTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const startPet = (x: number, y: number) => {
     stopPet()
@@ -124,5 +145,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

@@ -9,6 +9,7 @@ export interface SystemStats {
   battery_pct: number | null // 배터리 없으면 null
   charging: boolean
   net_bps: number
+  top_procs: { pid: number; name: string; cpu: number }[]
 }
 
 export const isTauri = () => '__TAURI_INTERNALS__' in window
@@ -38,3 +39,9 @@ export const windOf = (s: SystemStats | null) => {
 export const fmtBps = (b: number) => (b > 1e6 ? (b / 1e6).toFixed(1) + 'MB/s' : (b / 1e3).toFixed(0) + 'KB/s')
 
 export const fmtGB = (b: number) => (b / 1024 ** 3).toFixed(1) + 'GB'
+
+/** 사용자가 버튼으로 직접 지목한 프로세스에만 정중한 종료 요청(SIGTERM) */
+export async function calmProcess(pid: number, expectedName: string): Promise<string> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<string>('calm_process', { pid, expectedName })
+}

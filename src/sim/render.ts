@@ -157,6 +157,22 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
   // 먹이: 계절마다 다른 모양
   const fc = FOOD_COLOR[w.season]
   for (const f of w.food) {
+    if (f.trash) {
+      // 꼬깃한 캐시 뭉치 (크기 ∝ 용량)
+      const tr = 4 + Math.min(4, f.trash.bytes / 1e8)
+      ctx.fillStyle = '#b8bcc8'
+      ctx.beginPath()
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2
+        const rr = tr * (0.75 + ((i * 37 + Math.round(f.x)) % 10) / 22)
+        ctx.lineTo(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr)
+      }
+      ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = '#8b90a0'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(f.x - tr * 0.4, f.y); ctx.lineTo(f.x + tr * 0.3, f.y - tr * 0.3); ctx.stroke()
+      if ((frame + Math.round(f.y)) % 60 < 30) { ctx.fillStyle = '#facc15'; ctx.font = '9px sans-serif'; ctx.fillText('✦', f.x + tr, f.y - tr) }
+      continue
+    }
     if (w.season === '봄') {
       // 꽃
       ctx.fillStyle = fc

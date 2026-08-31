@@ -33,7 +33,7 @@ export default function App() {
       <Hud stats={w.stats} paused={w.paused} event={w.event} feed={w.feed} />
       <Graph history={w.history} />
       <ActivityCard a={w.activity} onUser={w.setUser} />
-      <SystemCard s={w.system} />
+      <SystemCard s={w.system} survey={w.survey} onSurvey={w.toggleSurvey} />
       <WeatherCard w={w.weather} />
       {w.selected && <Panel c={w.selected} lineage={w.lineage(w.selected)} />}
       <div className="fixed bottom-3 left-3 flex gap-1.5">

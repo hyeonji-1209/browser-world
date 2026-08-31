@@ -10,6 +10,8 @@ export interface Genes {
 export interface Food {
   x: number
   y: number
+  /** 청소 조사 모드: 실제 캐시 뭉치를 나타내는 쓰레기 (조사만, 삭제 안 함) */
+  trash?: { bytes: number; source: string }
 }
 
 /** 죽은 개체의 족보용 기록 */
