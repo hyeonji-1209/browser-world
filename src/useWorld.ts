@@ -6,6 +6,7 @@ import { dryOf, fetchSystem, heatOf, nightOf, pollutionOf, windOf, type SystemSt
 import { cloudOf, fetchWeather, rainOf, realNightOf, snowOf, tempStressOf, thunderOf, type Weather } from './sim/weather'
 import { defaultUser, fetchActivity, foodMulOf, saveUser, type Activity } from './sim/activity'
 import { fmtSize, scanJunk } from './sim/cleaner'
+import { play, setSoundEnabled, soundEnabled, unlock } from './sim/sound'
 
 export function useWorld() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -24,6 +25,8 @@ export function useWorld() {
   const [survey, setSurvey] = useState({ active: false, total: 0, bySource: {} as Record<string, number> })
   const [away, setAway] = useState<{ ms: number; ticks: number } | null>(null)
   const ffRef = useRef(0)
+  const [sound, setSoundState] = useState(soundEnabled)
+  const [snapshots, setSnapshots] = useState<{ tick: number; season: string; pop: number }[]>([])
   const systemNightRef = useRef<number | null>(null)
   const weatherNightRef = useRef(0)
   const [selected, setSelected] = useState<Creature | null>(null)
@@ -75,11 +78,14 @@ export function useWorld() {
         if (ffRef.current === 0) world.say('세월이 다 흘렀어요 — 다시 지금이에요 ✨')
       }
       if (!pausedRef.current) for (let i = 0; i < speedRef.current; i++) world.step()
+      // 소리 재생 (빨리 감기 중엔 조용히)
+      if (ffRef.current === 0) for (const k of world.sounds) play(k)
+      world.sounds.length = 0
       // 선택 개체가 죽으면 해제
       const sel = selectedRef.current
       if (sel && !world.creatures.includes(sel)) { selectedRef.current = null; setSelected(null) }
       world.draw(ctx, selectedRef.current)
-      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); setSurvey({ ...world.survey, bySource: { ...world.survey.bySource } }); bump((n) => n + 1) }
+      if (t - lastHud > 100) { lastHud = t; setStats(world.stats()); setHistory([...world.history]); setEvent(world.lastEvent); setFeed([...world.feed]); setSurvey({ ...world.survey, bySource: { ...world.survey.bySource } }); setSnapshots(world.snapshots.map(({ tick, season, pop }) => ({ tick, season, pop }))); bump((n) => n + 1) }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -126,6 +132,8 @@ export function useWorld() {
 
   const fastForward = (ticks: number) => { ffRef.current = ticks; setAway(null) }
   const dismissAway = () => setAway(null)
+  const toggleSound = () => { const v = !soundEnabled(); setSoundEnabled(v); setSoundState(v); if (v) unlock() }
+  const travel = (tick: number) => worldRef.current?.travel(tick) ?? false
 
   /** 청소 조사 시작/중단 (읽기 전용 — 실제 삭제는 하지 않음) */
   const toggleSurvey = async () => {
@@ -140,6 +148,7 @@ export function useWorld() {
 
   const petTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const startPet = (x: number, y: number) => {
+    unlock() // 첫 입력에서 오디오 잠금 해제
     stopPet()
     const w = worldRef.current
     const c = w?.nearest(x, y, 30)
@@ -164,5 +173,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

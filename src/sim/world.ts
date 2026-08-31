@@ -41,6 +41,10 @@ export class World {
   lastSavedAt: number | null = null
   /** 렌더러가 소비하는 순간 이펙트 */
   effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet'; x: number; y: number; t: number; text?: string }[] = []
+  /** 프론트가 꺼내 재생하는 소리 큐 */
+  sounds: ('eat' | 'birth' | 'death' | 'lightning' | 'pet')[] = []
+  /** 타임머신: 3000틱마다 자동 스냅샷 (메모리에만, 최근 8개) */
+  snapshots: { tick: number; season: Season; pop: number; json: string }[] = []
 
   constructor(W: number, H: number) {
     this.resize(W, H)
@@ -106,6 +110,7 @@ export class World {
     c.energy = Math.min(c.energy + 2, CFG.reproduceAt * 0.95) // 번식 문턱은 못 넘게
     c.petted++
     this.effects.push({ kind: 'pet', x: c.x + rnd(-6, 6), y: c.y - c.genes.size * 2, t: 0 })
+    this.sounds.push('pet')
   }
 
   /** 커밋 보상: 먹이 비 */
@@ -178,7 +183,11 @@ export class World {
       }
     }
     if (Math.random() < CFG.foodRate * this.foodMul * this.activityMul * (1 - this.pollution * 0.6) * (1 - this.night * 0.3) * (1 + this.rain * 1.5) * (1 - this.dry * 0.35)) this.spawnFood(1)
-    if (this.thunder && Math.random() < 0.004) this.effects.push({ kind: 'lightning', x: rnd(0, this.W), y: 0, t: 0 })
+    if (this.thunder && Math.random() < 0.004) { this.effects.push({ kind: 'lightning', x: rnd(0, this.W), y: 0, t: 0 }); this.sounds.push('lightning') }
+    if (this.tick % 3000 === 0 && this.creatures.length) {
+      this.snapshots.push({ tick: this.tick, season: this.season, pop: this.creatures.filter((c) => !c.isPredator).length, json: this.serialize() })
+      if (this.snapshots.length > 8) this.snapshots.shift()
+    }
     if (Math.random() < CFG.outbreakChance * (1 + this.pollution * 8)) this.outbreak()
 
     const dead = new Set<Creature>()
@@ -198,13 +207,13 @@ export class World {
           this.say(`조사 완료! 지울 수 있는 캐시 ${gb}GB를 찾았어요 — 💻 카드에서 결과 보기`)
         }
       }
-      if (r.ate && Math.random() < 0.5) this.effects.push({ kind: 'eat', x: c.x, y: c.y - c.genes.size * 2, t: 0, text: c.isPredator ? '앙' : '냠' })
-      if (r.child) this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 })
+      if (r.ate && Math.random() < 0.5) { this.effects.push({ kind: 'eat', x: c.x, y: c.y - c.genes.size * 2, t: 0, text: c.isPredator ? '앙' : '냠' }); this.sounds.push('eat') }
+      if (r.child) { this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 }); if (Math.random() < 0.5) this.sounds.push('birth') }
       if (r.killed && !dead.has(r.killed)) {
         dead.add(r.killed); this.bury(r.killed, '포식'); this.effects.push({ kind: 'death', x: r.killed.x, y: r.killed.y, t: 0 })
         if (Math.random() < 0.25) this.say(`${r.killed.name}, ${c.family} 여우에게… 😢`)
       }
-      if (!r.alive) { dead.add(c); this.bury(c, r.cause!); this.effects.push({ kind: 'death', x: c.x, y: c.y, t: 0 }) }
+      if (!r.alive) { dead.add(c); this.bury(c, r.cause!); this.effects.push({ kind: 'death', x: c.x, y: c.y, t: 0 }); if (Math.random() < 0.3) this.sounds.push('death') }
       if (r.child) {
         born.push(r.child)
         if (Math.random() < 0.12) this.say(`${r.child.name}${r.child.isPredator ? ' 🦊' : ''} 태어났어요 🎉`)
@@ -231,6 +240,19 @@ export class World {
       this.history.push({ tick: s.tick, pop: s.population, pred: s.predators, speed: s.avgSpeed, size: s.avgSize, sight: s.avgSight })
       if (this.history.length > 400) this.history.shift()
     }
+  }
+
+  /** 타임머신: 과거 스냅샷으로 여행 (이후 스냅샷은 남겨둬서 다시 앞으로도 갈 수 있음) */
+  travel(tick: number): boolean {
+    const snap = this.snapshots.find((s) => s.tick === tick)
+    if (!snap) return false
+    const keep = this.snapshots
+    const ok = this.restore(snap.json)
+    if (ok) {
+      this.snapshots = keep
+      this.say(`시간을 거슬러 tick ${tick.toLocaleString()}으로 왔어요 🌀`)
+    }
+    return ok
   }
 
   /** 역사책: 명예의 전당 + 멸종 가문 */
