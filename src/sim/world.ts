@@ -42,8 +42,17 @@ export class World {
   /** 마우스가 올라가 있는 개체 (이름표) */
   hover: Creature | null = null
   private lastCrisisSay = -9999
+  /** 계절 축제 (계절이 바뀌는 순간 한바탕) */
+  festival: { kind: Season; until: number } | null = null
+  private prevSeason: Season = '봄'
+  /** 마일스톤 */
+  birthsTotal = 0
+  private birthMilestones = [100, 500, 1000, 5000, 10000]
+  private genMilestones = [10, 25, 50, 100]
+  /** 번성한 가문 (8마리 이상 최대 가문) — 깃발 표시용 */
+  topFamily: string | null = null
   /** 렌더러가 소비하는 순간 이펙트 */
-  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet'; x: number; y: number; t: number; text?: string }[] = []
+  effects: { kind: 'eat' | 'birth' | 'death' | 'lightning' | 'pet' | 'confetti'; x: number; y: number; t: number; text?: string }[] = []
   /** 프론트가 꺼내 재생하는 소리 큐 */
   sounds: ('eat' | 'birth' | 'death' | 'lightning' | 'pet')[] = []
   /** 타임머신: 3000틱마다 자동 스냅샷 (메모리에만, 최근 8개) */
@@ -154,6 +163,7 @@ export class World {
     return JSON.stringify({
       v: 1, savedAt: Date.now(), tick: this.tick, nextId: getNextId(), W: this.W, H: this.H,
       creatures: this.creatures, food: this.food, graveyard: [...this.graveyard.values()], history: this.history,
+      birthsTotal: this.birthsTotal, birthMilestones: this.birthMilestones, genMilestones: this.genMilestones,
     })
   }
   restore(json: string): boolean {
@@ -169,6 +179,11 @@ export class World {
       this.food = d.food.map((f: Food) => ({ x: f.x * sx, y: f.y * sy }))
       this.graveyard = new Map(d.graveyard.map((g: Ghost) => [g.id, g]))
       this.history = d.history
+      this.birthsTotal = d.birthsTotal ?? 0
+      if (Array.isArray(d.birthMilestones)) this.birthMilestones = d.birthMilestones
+      if (Array.isArray(d.genMilestones)) this.genMilestones = d.genMilestones
+      this.prevSeason = this.season
+      this.festival = null
       this.lastEvent = `세계 복원 (tick ${this.tick})`
       return true
     } catch { return false }
@@ -176,6 +191,13 @@ export class World {
 
   step() {
     this.tick++
+    // 계절 축제
+    if (this.season !== this.prevSeason) {
+      this.prevSeason = this.season
+      this.festival = { kind: this.season, until: this.tick + 900 }
+      this.say({ 봄: '봄이 왔어요 🌸 꽃잎이 흩날려요', 여름: '여름이에요 ✨ 밤에 반딧불이가 나와요', 가을: '가을이에요 🍂 낙엽이 물들어요', 겨울: '첫눈이 와요 ❄️ 다들 하늘을 구경해요' }[this.season])
+    }
+    if (this.festival && this.tick > this.festival.until) this.festival = null
     if (this.wind > 0) {
       const wx = this.wind * 0.9, wy = Math.sin(this.tick * 0.01) * this.wind * 0.2
       for (const f of this.food) {
@@ -211,7 +233,22 @@ export class World {
         }
       }
       if (r.ate && Math.random() < 0.5) { this.effects.push({ kind: 'eat', x: c.x, y: c.y - c.genes.size * 2, t: 0, text: c.isPredator ? '앙' : '냠' }); this.sounds.push('eat') }
-      if (r.child) { this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 }); if (Math.random() < 0.5) this.sounds.push('birth') }
+      if (r.child) {
+        this.effects.push({ kind: 'birth', x: c.x, y: c.y, t: 0 })
+        if (Math.random() < 0.5) this.sounds.push('birth')
+        this.birthsTotal++
+        if (this.birthMilestones[0] === this.birthsTotal) {
+          this.birthMilestones.shift()
+          this.say(`${this.birthsTotal.toLocaleString()}번째 아이가 태어났어요 🎊`)
+          this.effects.push({ kind: 'confetti', x: c.x, y: c.y, t: 0 })
+          this.sounds.push('birth')
+        }
+        if (this.genMilestones[0] != null && r.child.gen >= this.genMilestones[0]) {
+          const g = this.genMilestones.shift()!
+          this.say(`${g}세대 달성! 진화가 쌓이고 있어요 🧬`)
+          this.effects.push({ kind: 'confetti', x: r.child.x, y: r.child.y, t: 0 })
+        }
+      }
       if (r.killed && !dead.has(r.killed)) {
         dead.add(r.killed); this.bury(r.killed, '포식'); this.effects.push({ kind: 'death', x: r.killed.x, y: r.killed.y, t: 0 })
         if (Math.random() < 0.25) this.say(`${r.killed.name}, ${c.family} 여우에게… 😢`)
@@ -247,6 +284,13 @@ export class World {
     }
     if (!this.creatures.some((c) => c.isPredator) && this.tick % 1500 === 0) for (let i = 0; i < 2; i++) this.spawn('predator')
 
+    if (this.tick % 60 === 0) {
+      const fam = new Map<string, number>()
+      for (const c of this.creatures) if (!c.isPredator) fam.set(c.family, (fam.get(c.family) ?? 0) + 1)
+      let best: string | null = null, bn = 7
+      for (const [f, n] of fam) if (n > bn) { bn = n; best = f }
+      this.topFamily = best
+    }
     if (this.tick % CFG.sampleEvery === 0) {
       const s = this.stats()
       this.history.push({ tick: s.tick, pop: s.population, pred: s.predators, speed: s.avgSpeed, size: s.avgSize, sight: s.avgSight })

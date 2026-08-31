@@ -1,3 +1,4 @@
+import { crestHue, crestPattern } from './crest'
 import type { Creature } from './creature'
 import type { Season } from './types'
 import type { World } from './world'
@@ -11,6 +12,23 @@ const BG: Record<Season, [string, string]> = {
 const FOOD_COLOR: Record<Season, string> = { 봄: '#f472b6', 여름: '#fb7185', 가을: '#f59e0b', 겨울: '#60a5fa' }
 
 let frame = 0
+
+// 가문 문장 미니 캔버스 캐시 (깃발용)
+const crestCache = new Map<string, HTMLCanvasElement>()
+function getCrest(family: string): HTMLCanvasElement {
+  let cv = crestCache.get(family)
+  if (!cv) {
+    cv = document.createElement('canvas')
+    cv.width = 5; cv.height = 5
+    const x = cv.getContext('2d')!
+    const hue = crestHue(family)
+    x.fillStyle = `hsl(${hue},55%,90%)`; x.fillRect(0, 0, 5, 5)
+    x.fillStyle = `hsl(${hue},60%,50%)`
+    crestPattern(family).forEach((on, i) => { if (on) x.fillRect(i % 5, Math.floor(i / 5), 1, 1) })
+    crestCache.set(family, cv)
+  }
+  return cv
+}
 
 type Mood = 'normal' | 'hungry' | 'scared' | 'happy' | 'sleepy'
 function blob(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, dir: number, bounce: number, predator: boolean, mood: Mood = 'normal') {
@@ -168,6 +186,45 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     }
   }
 
+  // 계절 축제: 계절이 바뀌는 순간 한바탕
+  if (w.festival) {
+    const k = w.festival.kind
+    if (k === '봄') {
+      // 벚꽃잎
+      for (let i = 0; i < 50; i++) {
+        const x = (i * 199 + frame * 1.1 + Math.sin(frame * 0.03 + i) * 35) % w.W
+        const y = (i * 137 + frame * 1.6) % w.H
+        ctx.fillStyle = i % 3 ? 'rgba(249,168,212,.85)' : 'rgba(251,207,232,.85)'
+        ctx.beginPath(); ctx.ellipse(x, y, 3, 1.7, (frame * 0.03 + i) % (Math.PI * 2), 0, Math.PI * 2); ctx.fill()
+      }
+    } else if (k === '가을') {
+      // 낙엽
+      for (let i = 0; i < 40; i++) {
+        const x = (i * 223 + frame * 0.9 + Math.sin(frame * 0.02 + i) * 45) % w.W
+        const y = (i * 157 + frame * 1.2) % w.H
+        ctx.fillStyle = i % 2 ? 'rgba(217,119,6,.8)' : 'rgba(180,83,9,.8)'
+        ctx.beginPath(); ctx.ellipse(x, y, 3.5, 2, (frame * 0.05 + i * 2) % (Math.PI * 2), 0, Math.PI * 2); ctx.fill()
+      }
+    } else if (k === '겨울') {
+      // 첫눈 (펑펑)
+      ctx.fillStyle = 'rgba(255,255,255,.95)'
+      for (let i = 0; i < 120; i++) {
+        const x = (i * 173 + frame * 0.7 + Math.sin(frame * 0.02 + i) * 25) % w.W
+        const y = (i * 113 + frame * 1.5) % w.H
+        ctx.beginPath(); ctx.arc(x, y, 1.5 + (i % 4) * 0.8, 0, Math.PI * 2); ctx.fill()
+      }
+    } else {
+      // 여름: 반딧불이 (은은하게 깜빡)
+      for (let i = 0; i < 22; i++) {
+        const x = (i * 271 + Math.sin(frame * 0.015 + i * 2) * 90 + w.W) % w.W
+        const y = (i * 181 + Math.cos(frame * 0.012 + i) * 60 + w.H) % w.H
+        const glow = (Math.sin(frame * 0.08 + i * 3) + 1) / 2
+        ctx.fillStyle = `rgba(253,224,71,${0.25 + glow * 0.6})`
+        ctx.beginPath(); ctx.arc(x, y, 1.5 + glow * 1.5, 0, Math.PI * 2); ctx.fill()
+      }
+    }
+  }
+
   // 먹이: 계절마다 다른 모양
   const fc = FOOD_COLOR[w.season]
   for (const f of w.food) {
@@ -220,6 +277,15 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
       : c.isPredator ? `hsl(${c.genes.hue},75%,68%)` : `hsl(${c.genes.hue},65%,72%)`
     const mood: Mood = w.night > 0.6 ? 'sleepy' : c.scared ? 'scared' : c.happyTicks > 0 ? 'happy' : c.energy < 30 ? 'hungry' : 'normal'
     blob(ctx, c.x, c.y, r, color, c.dir, w.night > 0.6 ? bounce * 0.2 : bounce, c.isPredator, mood)
+    // 번성한 가문의 깃발
+    if (!c.isPredator && w.topFamily && c.family === w.topFamily) {
+      const fx = c.x + r * 0.7, fy = c.y - r - 12
+      ctx.strokeStyle = '#b0a6c2'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(fx, fy + 10); ctx.lineTo(fx, fy); ctx.stroke()
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(getCrest(c.family), fx, fy - 1, 7, 7)
+      ctx.imageSmoothingEnabled = true
+    }
     if (mood === 'sleepy' && (frame + c.id * 13) % 90 < 45) {
       ctx.fillStyle = '#818cf8'; ctx.font = `${Math.max(9, r * 0.9)}px sans-serif`
       ctx.fillText('z', c.x + r * 0.9, c.y - r * 1.2 - ((frame + c.id * 13) % 45) * 0.15)
@@ -247,6 +313,14 @@ export function drawWorld(ctx: CanvasRenderingContext2D, w: World, selected: Cre
     } else if (e.kind === 'death') {
       ctx.globalAlpha = (1 - p) * 0.9; ctx.font = '14px sans-serif'
       ctx.fillText('👻', e.x + Math.sin(p * 8) * 4, e.y - p * 40)
+    } else if (e.kind === 'confetti') {
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2
+        const dist = p * (30 + (i % 5) * 12)
+        ctx.globalAlpha = 1 - p
+        ctx.fillStyle = ['#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa'][i % 5]
+        ctx.fillRect(e.x + Math.cos(a) * dist, e.y + Math.sin(a) * dist - p * 10 + p * p * 30, 3, 3)
+      }
     } else if (e.kind === 'lightning' && e.t < 6) {
       ctx.globalAlpha = 1 - e.t / 6
       ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(0, 0, w.W, w.H)

@@ -92,6 +92,7 @@ export function useWorld() {
     loadActivity(defaultUser())
     const q = new URLSearchParams(location.search)
     if (q.has('wind')) world.wind = Math.min(1, Number(q.get('wind')) || 0)
+    if (q.has('festival')) world.festival = { kind: (q.get('festival') as '봄' | '여름' | '가을' | '겨울') || '봄', until: Number.MAX_SAFE_INTEGER }
     const pollWeather = async () => {
       const wx = await fetchWeather()
       if (!wx) return
