@@ -1,6 +1,7 @@
 import type { Creature } from '../sim/creature'
 import type { Ghost } from '../sim/types'
 import type { World } from '../sim/world'
+import { Crest } from './Crest'
 
 const isGhost = (x: Creature | Ghost): x is Ghost => 'died' in x
 
@@ -36,7 +37,7 @@ export function HistoryBook({ world, onClose }: { world: World; onClose: () => v
           <div className="text-xs text-[#9a8fae] mb-1">🕯 사라진 가문들</div>
           {c.extinct.map((g) => (
             <div key={g.family} className="text-xs">
-              <b>{g.family}가</b> — 마지막 아이 {g.name}, {g.cause}로 (tick {g.died.toLocaleString()})
+              <Crest family={g.family} size={12} /> <b>{g.family}가</b> — 마지막 아이 {g.name}, {g.cause}로 (tick {g.died.toLocaleString()})
             </div>
           ))}
         </>

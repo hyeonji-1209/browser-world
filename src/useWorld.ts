@@ -135,6 +135,45 @@ export function useWorld() {
   const toggleSound = () => { const v = !soundEnabled(); setSoundEnabled(v); setSoundState(v); if (v) unlock() }
   const travel = (tick: number) => worldRef.current?.travel(tick) ?? false
 
+  /** 세계를 파일로 내보내기 (앱: 데스크톱 저장 / 웹: 다운로드) */
+  const exportWorld = async (): Promise<string> => {
+    const w = worldRef.current
+    if (!w) return '아직 세계가 없어요'
+    const json = w.serialize()
+    const d = new Date()
+    const name = `world-gift-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.json`
+    try {
+      const { isTauri } = await import('./sim/system')
+      if (isTauri()) {
+        const bytes = new TextEncoder().encode(json)
+        let bin = ''
+        for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+        const { invoke } = await import('@tauri-apps/api/core')
+        const path = await invoke<string>('save_png', { name, base64: btoa(bin) })
+        return `데스크톱에 저장됐어요: ${path.split('/').pop()}`
+      }
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+      a.download = name
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000)
+      return '다운로드를 시작했어요!'
+    } catch (e) { return `내보내기 실패: ${e}` }
+  }
+
+  /** 선물 받은 세계 불러오기 (기존 세계는 타임머신에 보관) */
+  const importWorld = async (file: File): Promise<string> => {
+    const w = worldRef.current
+    if (!w) return '아직 세계가 없어요'
+    try {
+      const text = await file.text()
+      w.snapshotNow() // 안전망
+      if (!w.restore(text)) return '읽을 수 없는 파일이에요 😢 (world-gift-*.json 맞나요?)'
+      w.say('선물 받은 세계가 도착했어요 🎁')
+      return '새 세계가 펼쳐졌어요! 이전 세계는 ⏪ 타임머신에 있어요'
+    } catch (e) { return `불러오기 실패: ${e}` }
+  }
+
   /** 청소 조사 시작/중단 (읽기 전용 — 실제 삭제는 하지 않음) */
   const toggleSurvey = async () => {
     const w = worldRef.current
@@ -178,5 +217,5 @@ export function useWorld() {
   const outbreak = () => worldRef.current?.outbreak()
   const lineage = (c: Creature) => worldRef.current?.lineage(c) ?? []
 
-  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, hoverAt, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
+  return { canvasRef, worldRef, stats, history, event, feed, activity, system, weather, survey, toggleSurvey, away, fastForward, dismissAway, sound, toggleSound, snapshots, travel, hoverAt, exportWorld, importWorld, startPet, stopPet, setUser, selected, spawnPredator, outbreak, paused, speed, select, setPaused, setSpeed, reset, spawnFood, lineage }
 }

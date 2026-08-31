@@ -1,5 +1,6 @@
 import type { Creature } from '../sim/creature'
 import type { Ghost } from '../sim/types'
+import { Crest } from './Crest'
 
 function Bar({ label, v, max }: { label: string; v: number; max: number }) {
   return (
@@ -17,7 +18,7 @@ export function Panel({ c, lineage }: { c: Creature; lineage: (Creature | Ghost)
   return (
     <div className="card fixed top-3 right-3 w-[270px] px-4 py-3 text-[13px] leading-relaxed">
       <h3 className="font-bold mb-1.5">
-        <span style={{ color: c.color }}>■</span> {c.isPredator ? '🦊' : '🐣'} {c.name} · {c.gen}세대
+        <Crest family={c.family} /> {c.isPredator ? '🦊' : '🐣'} {c.name} · {c.gen}세대
       </h3>
       <div className="text-xs text-[#9a8fae] mb-1.5">{
         c.infected > 0 ? '아파요… 🤒' : c.scared ? '무서워서 도망치는 중! 💦' : c.happyTicks > 0 ? '기분이 좋아요 ✨' : c.energy < 30 ? '배가 고파요 🥺' : c.energy > 100 ? '든든해요 😊' : '느긋하게 지내는 중 🍃'

@@ -1,5 +1,6 @@
 import type { WorldStats } from '../sim/types'
 import { Card } from './Card'
+import { Crest } from './Crest'
 
 /** 세계의 기분 한 줄 */
 function mood(s: WorldStats): string {
@@ -21,7 +22,7 @@ export function Hud({ stats, paused, event, feed }: { stats: WorldStats | null; 
       <div className="text-[#8a7f9e]">{paused ? '⏸ 시간이 멈춰 있어요' : mood(stats)}</div>
       <div className="mt-1">🐣 {stats.population}마리 · 🦊 {stats.predators} · 🍓 {stats.food}{stats.infected > 0 && <span> · 🤒 {stats.infected}</span>}</div>
       <div className="text-xs text-[#9a8fae]">
-        👑 {stats.topFamilies[0] ? `${stats.topFamilies[0].family}가 (${stats.topFamilies[0].count}마리)` : '아직 큰 가문이 없어요'} · {stats.maxGen}세대까지
+        👑 {stats.topFamilies[0] ? <><Crest family={stats.topFamilies[0].family} size={12} /> {stats.topFamilies[0].family}가 ({stats.topFamilies[0].count}마리)</> : '아직 큰 가문이 없어요'} · {stats.maxGen}세대까지
       </div>
       <div className="text-[11px] text-[#b0a6c2]">
         평균 속도 {stats.avgSpeed.toFixed(2)} · 크기 {stats.avgSize.toFixed(2)} · 시야 {stats.avgSight.toFixed(0)} · 먹이 성장 x{(stats.foodMul * stats.activityMul).toFixed(2)}

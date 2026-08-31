@@ -254,6 +254,13 @@ export class World {
     }
   }
 
+  /** 지금 이 순간을 타임머신에 수동 기록 (선물 불러오기 전 안전망 등) */
+  snapshotNow() {
+    if (this.snapshots.some((s) => s.tick === this.tick)) return
+    this.snapshots.push({ tick: this.tick, season: this.season, pop: this.creatures.filter((c) => !c.isPredator).length, json: this.serialize() })
+    if (this.snapshots.length > 8) this.snapshots.shift()
+  }
+
   /** 타임머신: 과거 스냅샷으로 여행 (이후 스냅샷은 남겨둬서 다시 앞으로도 갈 수 있음) */
   travel(tick: number): boolean {
     const snap = this.snapshots.find((s) => s.tick === tick)
