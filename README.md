@@ -1,4 +1,8 @@
-# browser-world
+# browser-world 🌱
+
+![MIT License](https://img.shields.io/badge/license-MIT-ffc0cb) ![Made with Vite+React+Tauri](https://img.shields.io/badge/made%20with-Vite%20·%20React%20·%20Tauri-a5b4fc)
+
+![browser-world 스크린샷](docs/screenshot.png)
 
 브라우저에서 돌아가는 나만의 작은 세계.
 픽셀 아트 생명체들이 살고, 먹고, 번식하고, 진화하는 시뮬레이션.
@@ -79,3 +83,12 @@ Vite · React · TypeScript · Tailwind v4 · Tauri 2 (Rust `sysinfo`) — 시�
 
 - 핸드폰 활동 연동 (걸음수 → 먹이, iOS 단축어 → Cloudflare Worker KV)
 - 세대 타임라인 되감기
+
+## 기여
+
+토이 프로젝트지만 이슈·PR 환영해요. 규칙 하나 넣고 → 어떻게 되나 구경 → 재밌으면 머지, 그게 전부입니다.
+시뮬 로직은 React 없이 `npx vite-node`로 헤드리스 실행할 수 있어서 균형 실험하기 좋아요.
+
+## 라이선스
+
+[MIT](LICENSE) — 마음껏 가져다 쓰고, 여러분만의 세계를 만들어 주세요.

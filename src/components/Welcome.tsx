@@ -1,6 +1,11 @@
 import { useState } from 'react'
 
-const seen = () => { try { return localStorage.getItem('bw:welcomed') === '1' } catch { return true } }
+const seen = () => {
+  try {
+    if (new URLSearchParams(location.search).has('quiet')) return true // 스크린샷·데모용
+    return localStorage.getItem('bw:welcomed') === '1'
+  } catch { return true }
+}
 
 export function Welcome() {
   const [open, setOpen] = useState(() => !seen())
